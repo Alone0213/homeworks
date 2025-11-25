@@ -98,5 +98,9 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp"
-    }
+    },
+    "java.project.sourcePaths": [
+        "java/3_11.25",
+        "java"
+    ]
 }
