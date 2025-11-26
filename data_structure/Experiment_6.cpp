@@ -9,22 +9,20 @@ struct node
     int val;
 };
 vector<node> t;
-vector<node> s;
+node s[2500];
 int cnt;
-vector<int> num;//原矩阵中每列非零元的个数
-vector<int> pospercol;
+int num[50];//原矩阵中每列非零元的个数
+int pospercol[50];
+int output[50][50];
 signed main()
 {
     printf("请输入行数和列数，两者中间空一格：\n");
     cin >> n >> m;
     printf("请输入矩阵：\n");
-    for (int i = 1; i <= n; i++)
-    {
-        for (int j = 1; j <= m; j++)
-        {
+    for (int i = 1; i <= n; i++){
+        for (int j = 1; j <= m; j++){
             cin >> in;
-            if (in)
-            {
+            if (in){
                 t.push_back({i, j, in});
                 num[j]++;
             }
@@ -41,12 +39,16 @@ signed main()
         s[pos].val=i.val;
         pospercol[i.c]++;
     }
-    for(auto i:t){
-        printf("%d %d %d\n",i.r,i.c,i.val);
+    int l=t.size();
+    for(int i=1; i<=l; i++){
+        output[s[i].r][s[i].c]=s[i].val;
     }
-    puts("");
-    for(auto i:s){
-        printf("%d %d %d\n",i.r,i.c,i.val);
+    for(int i=1; i<=m; i++){
+        for(int j=1; j<=n; j++){
+            printf("%d ",output[i][j]);
+        }
+        printf("\n");
     }
     return 0;
 }
+//传参分为传值和传引用，基本数据类型为传值，引用数据类型为传引用，传值不修改，传引用会对该变量进行修改
