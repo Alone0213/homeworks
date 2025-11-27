@@ -3,8 +3,7 @@ using namespace std;
 
 int n, m;//行与列
 int in;
-struct node
-{
+struct node{
     int r, c;
     int val;
 };
@@ -24,25 +23,26 @@ signed main()
             cin >> in;
             if (in){
                 t.push_back({i, j, in});
-                num[j]++;
+                num[j]++;//记录每列的元素个数
             }
         }
     }
     pospercol[1]=1;
     for(int i=2; i<=m; i++){
         pospercol[i]=pospercol[i-1]+num[i-1];
-    }
+    }//求每列第一个非零元的序号
     for(auto i:t){
-        int pos=pospercol[i.c];
+        int pos=pospercol[i.c];//找到当前列的非零元序号排到几了
         s[pos].c=i.r;
         s[pos].r=i.c;
         s[pos].val=i.val;
-        pospercol[i.c]++;
+        pospercol[i.c]++;//序号++
     }
     int l=t.size();
     for(int i=1; i<=l; i++){
         output[s[i].r][s[i].c]=s[i].val;
     }
+    printf("转置结果:\n");
     for(int i=1; i<=m; i++){
         for(int j=1; j<=n; j++){
             printf("%d ",output[i][j]);

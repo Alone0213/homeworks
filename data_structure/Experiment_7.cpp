@@ -12,7 +12,9 @@ struct rdexlist{
 rdexlist t1,t2,m;
 signed main(){
     int in;
+    printf("请输入A的行数和列数，两者中间空一格：\n");
     cin >> t1.rnum >> t1.cnum;
+    printf("请输入矩阵：\n");
     for(int i=1; i<=t1.rnum; i++){
         t1.rpos[i]=t1.trnum+1;
         for(int j=1; j<=t1.cnum; j++){
@@ -25,7 +27,9 @@ signed main(){
             }
         }
     }
+    printf("请输入B的行数和列数，两者中间空一格：\n");
     cin >> t2.rnum >> t2.cnum;
+    printf("请输入矩阵：\n");
     for(int i=1; i<=t2.rnum; i++){
         t2.rpos[i]=t2.trnum+1;
         for(int j=1; j<=t2.cnum; j++){
@@ -39,7 +43,6 @@ signed main(){
         }
     }
     int csum_perrow[50];
-
     if(t1.trnum*t2.trnum)
     for(int i=1; i<=t1.rnum; i++){
         memset(csum_perrow,0,sizeof(csum_perrow));
@@ -61,6 +64,7 @@ signed main(){
             }
         }
     }
+    printf("乘积矩阵非零元为：\n");
     for(int i=1; i<=m.trnum; i++){
         printf("%d %d %d\n",m.ele[i].r,m.ele[i].c,m.ele[i].val);
     }
