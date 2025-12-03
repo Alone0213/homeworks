@@ -8,7 +8,7 @@ struct node{
 }tr[10<<2];
 int cnt;
 priority_queue<node> q;
-void print(int s){//
+void print(int s){
     printf("number:%d value:%d\n",tr[s].num,tr[s].val);
     printf("node[%d]`s left son: ",tr[s].num);
     if(tr[s].ls) print(tr[s].ls);

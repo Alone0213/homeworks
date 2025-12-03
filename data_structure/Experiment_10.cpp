@@ -10,7 +10,6 @@ node tr[1<<10];
 queue<int> q;
 void solve(int rt){
     q.push(rt);
-    tr[rt].visited=true;
     while(!q.empty()){
         int h=q.front();
         q.pop();
@@ -23,6 +22,7 @@ void solve(int rt){
 signed main(){
     for(int i=1; i<=10; i++)
         tr[i]=node{i,true,false,i<<1,i<<1|1};
+    printf("层序遍历结果：");
     solve(1);
     return 0;
 }
