@@ -9,6 +9,7 @@ struct node{
 node tr[1<<10];
 stack<int> k;
 void solve(){
+    printf("中序遍历结果：");
     int top;
     k.push(1);
     while(!k.empty()){
