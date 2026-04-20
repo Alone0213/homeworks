@@ -1,0 +1,53 @@
+Microsoft (R) Macro Assembler Version 6.11		    04/13/26 19:57:47
+tempfile.asm						     Page 1 - 1
+
+
+				.model tiny
+ 0000				.code
+				org 100h
+ 0100				start:
+ 0100  BC 00B0			    mov sp, 00B0h
+ 0103  B8 8057			    mov ax, 8057h
+ 0106  BB 0F79			    mov bx, 0F79h
+ 0109  50			    push ax
+ 010A  53			    push bx
+ 010B  58			    pop ax
+ 010C  5B			    pop bx          ; Completes swap: AX=0F79h, BX=8057h
+
+ 010D  B4 4C			    mov ah, 4Ch     ; Exit to DOS
+ 010F  CD 21			    int 21h
+				end start
+
+
+Microsoft (R) Macro Assembler Version 6.11		    04/13/26 19:57:47
+tempfile.asm						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0111	  Word	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	16 Bit	 0000	  Word	  Public  'DATA'	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0000h	 
+@Model . . . . . . . . . . . . .	Number	 0001h	 
+@code  . . . . . . . . . . . . .	Text   	 DGROUP
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+start  . . . . . . . . . . . . .	L Near	 0100	  _TEXT	
+
+	   0 Warnings
+	   0 Errors
