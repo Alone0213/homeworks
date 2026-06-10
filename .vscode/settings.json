@@ -100,8 +100,6 @@
         "variant": "cpp"
     },
     "java.project.sourcePaths": [
-        "java/6_12.17",
-        "java/4_12.16",
         "java/minigram"
     ]
 }

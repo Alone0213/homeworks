@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "tmp",
+            "request": "launch",
+            "mainClass": "tmp",
+            "projectName": "homeworks_8508831c"
+        },
+        {
+            "type": "java",
             "name": "TestPrintChar",
             "request": "launch",
             "mainClass": "TestPrintChar",
