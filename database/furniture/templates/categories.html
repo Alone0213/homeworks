@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}家具类型管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0"><i class="bi bi-tags me-2"></i>家具类型管理</h5>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="bi bi-plus-lg"></i> 新增类型</button>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>编号</th><th>类型名称</th><th>描述</th><th style="width:80px">操作</th></tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td>{{ r.CategoryID }}</td>
+                    <td><span class="badge bg-primary">{{ r.CategoryName }}</span></td>
+                    <td>{{ r.Description or '-' }}</td>
+                    <td><a href="/categories/delete/{{ r.CategoryID }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除「{{ r.CategoryName }}」？')"><i class="bi bi-trash"></i></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 新增 Modal -->
+<div class="modal fade" id="addModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="/categories/add">
+        <div class="modal-header bg-primary text-white"><h6 class="mb-0">新增家具类型</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-3"><label class="form-label">类型名称 <span class="text-danger">*</span></label><input name="name" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label">描述</label><textarea name="desc" class="form-control" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary">保存</button></div>
+    </form>
+</div></div></div>
+{% endblock %}

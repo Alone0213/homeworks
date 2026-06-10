@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}入库管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0"><i class="bi bi-arrow-down-circle me-2"></i>入库管理
+        <small class="text-muted fs-6 ms-2">支持弹窗内联创建供应商和家具，一次操作完成</small></h5>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="bi bi-plus-lg"></i> 新增入库</button>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>编号</th><th>家具</th><th>入库时间</th><th>数量</th><th>单价(元)</th><th>总金额(元)</th><th>备注</th><th>操作</th></tr></thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td>{{ r.EntryID }}</td><td>{{ r.FurnitureName }}</td>
+                <td>{{ r.EntryDate }}</td><td><span class="badge bg-success">{{ r.Quantity }}</span></td>
+                <td>¥{{ "%.2f"|format(r.UnitPrice) }}</td>
+                <td>¥{{ "%.2f"|format(r.Quantity * r.UnitPrice) }}</td>
+                <td>{{ r.Remarks or '-' }}</td>
+                <td><a href="/warehouse/delete/{{ r.EntryID }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('删除后库存将自动回退，确定？')"><i class="bi bi-trash"></i></a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+
+<!-- ========== 新增入库 Modal（含内联创建供应商和家具） ========== -->
+<div class="modal fade" id="addModal" data-bs-backdrop="static"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="post" action="/warehouse/add" id="warehouseForm">
+        <div class="modal-header bg-success text-white">
+            <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>新增入库
+                <small class="ms-2 fw-normal">可同时创建供应商和家具</small></h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+            <!-- === 第1步：选择/新建家具 === -->
+            <div class="mb-3 border rounded p-3 bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="fw-bold mb-0"><i class="bi bi-box me-1"></i>家具 <span class="text-danger">*</span></label>
+                    <div>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="toggleNewFurnitureBtn">
+                            <i class="bi bi-plus-lg"></i> 新建家具
+                        </button>
+                    </div>
+                </div>
+                <select name="furniture" id="furnitureSelect" class="form-select" required>
+                    <option value="">-- 选择已有家具 --</option>
+                    {% for f in furniture %}
+                    <option value="{{ f.FurnitureID }}" data-price="{{ f.UnitPrice }}">
+                        {{ f.FurnitureName }} (库存: {{ f.Stock }})
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- 内联新建家具面板 (初始隐藏) -->
+                <div id="newFurniturePanel" class="mt-3 border border-primary rounded p-3 d-none" style="background: #f0f8ff;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i>新建家具</span>
+                        <button type="button" class="btn-close btn-sm" id="closeNewFurniturePanel"></button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label class="form-label small">家具名称 <span class="text-danger">*</span></label>
+                            <input id="newFurnitureName" class="form-control form-control-sm" placeholder="例: 北欧实木书桌">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small">单价(元) <span class="text-danger">*</span></label>
+                            <input id="newFurniturePrice" type="number" step="0.01" class="form-control form-control-sm" placeholder="0.00">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small">类型 <span class="text-danger">*</span></label>
+                            <select id="newFurnitureCategory" class="form-select form-select-sm">
+                                <option value="">-- 选择 --</option>
+                                {% for c in categories %}
+                                <option value="{{ c.CategoryID }}">{{ c.CategoryName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label small">供应商 <span class="text-danger">*</span>
+                                <a href="javascript:void(0)" id="toggleNewSupplierBtn2" class="text-decoration-none small ms-2">
+                                    <i class="bi bi-plus-circle"></i> 新建
+                                </a>
+                            </label>
+                            <select id="newFurnitureSupplier" class="form-select form-select-sm">
+                                <option value="">-- 选择 --</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.SupplierID }}">{{ s.SupplierName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">描述</label>
+                            <input id="newFurnitureDesc" class="form-control form-control-sm" placeholder="可选">
+                        </div>
+                    </div>
+                    <div class="mt-2 text-end">
+                        <button type="button" class="btn btn-primary btn-sm" id="confirmNewFurnitureBtn">
+                            <i class="bi bi-check-lg"></i> 确认创建并选择
+                        </button>
+                    </div>
+                    <div id="furnitureCreateStatus" class="small mt-1"></div>
+                </div>
+            </div>
+
+            <!-- === 内联新建供应商面板 (可由新建家具面板或独立按钮触发) === -->
+            <div id="newSupplierPanel" class="mb-3 border border-warning rounded p-3 d-none" style="background: #fffbf0;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="fw-bold text-warning"><i class="bi bi-truck me-1"></i>新建供应商</span>
+                    <button type="button" class="btn-close btn-sm" id="closeNewSupplierPanel"></button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small">名称 <span class="text-danger">*</span></label>
+                        <input id="newSupplierName" class="form-control form-control-sm" placeholder="供应商名称">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">联系人</label>
+                        <input id="newSupplierContact" class="form-control form-control-sm" placeholder="联系人姓名">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">电话 <span class="text-danger">*</span></label>
+                        <input id="newSupplierPhone" class="form-control form-control-sm" placeholder="手机/固话">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">邮箱</label>
+                        <input id="newSupplierEmail" class="form-control form-control-sm" placeholder="email@example.com">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">地址</label>
+                        <input id="newSupplierAddress" class="form-control form-control-sm" placeholder="地址">
+                    </div>
+                </div>
+                <div class="mt-2 text-end">
+                    <button type="button" class="btn btn-warning btn-sm" id="confirmNewSupplierBtn">
+                        <i class="bi bi-check-lg"></i> 确认创建
+                    </button>
+                </div>
+                <div id="supplierCreateStatus" class="small mt-1"></div>
+            </div>
+
+            <!-- === 第2步：入库数量/单价 === -->
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="form-label">入库数量 <span class="text-danger">*</span></label>
+                    <input name="quantity" id="entryQty" type="number" min="1" class="form-control" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label">入库单价(元) <span class="text-danger">*</span></label>
+                    <input name="price" id="entryPrice" type="number" step="0.01" class="form-control" required>
+                </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">备注</label>
+                <input name="remarks" class="form-control" placeholder="可选备注">
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <div class="text-muted small me-auto">
+                <i class="bi bi-info-circle"></i>
+                入库后 <strong>库存自动增加</strong>，删除时自动回退
+            </div>
+            <button type="submit" class="btn btn-success px-4">确认入库</button>
+        </div>
+    </form>
+</div></div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ===== DOM 引用 =====
+const furnitureSelect = document.getElementById('furnitureSelect');
+const entryPrice = document.getElementById('entryPrice');
+const entryQty = document.getElementById('entryQty');
+
+const toggleNewFurnitureBtn = document.getElementById('toggleNewFurnitureBtn');
+const newFurniturePanel = document.getElementById('newFurniturePanel');
+const closeNewFurniturePanel = document.getElementById('closeNewFurniturePanel');
+const confirmNewFurnitureBtn = document.getElementById('confirmNewFurnitureBtn');
+const furnitureCreateStatus = document.getElementById('furnitureCreateStatus');
+
+const newSupplierPanel = document.getElementById('newSupplierPanel');
+const closeNewSupplierPanel = document.getElementById('closeNewSupplierPanel');
+const toggleNewSupplierBtn2 = document.getElementById('toggleNewSupplierBtn2');
+const confirmNewSupplierBtn = document.getElementById('confirmNewSupplierBtn');
+const supplierCreateStatus = document.getElementById('supplierCreateStatus');
+
+// ===== 切换新建家具面板 =====
+function showNewFurniturePanel(show) {
+    newFurniturePanel.classList.toggle('d-none', !show);
+    if (show) {
+        // 展开时清除家具选择
+        furnitureSelect.value = '';
+    }
+}
+toggleNewFurnitureBtn.addEventListener('click', () => {
+    showNewFurniturePanel(newFurniturePanel.classList.contains('d-none'));
+});
+closeNewFurniturePanel.addEventListener('click', () => showNewFurniturePanel(false));
+
+// ===== 切换新建供应商面板 =====
+function showNewSupplierPanel(show) {
+    newSupplierPanel.classList.toggle('d-none', !show);
+}
+toggleNewSupplierBtn2.addEventListener('click', () => {
+    showNewSupplierPanel(newSupplierPanel.classList.contains('d-none'));
+});
+closeNewSupplierPanel.addEventListener('click', () => showNewSupplierPanel(false));
+
+// ===== 选择已有家具 → 自动填入单价 =====
+furnitureSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    if (opt && opt.dataset.price) {
+        entryPrice.value = opt.dataset.price;
+    }
+    // 如果选择了已有家具，收起新建面板
+    if (this.value) showNewFurniturePanel(false);
+});
+
+// ===== 确认创建供应商 (AJAX) =====
+confirmNewSupplierBtn.addEventListener('click', async function() {
+    const name = document.getElementById('newSupplierName').value.trim();
+    const phone = document.getElementById('newSupplierPhone').value.trim();
+    if (!name || !phone) {
+        supplierCreateStatus.innerHTML = '<span class="text-danger">名称和电话为必填项</span>';
+        return;
+    }
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('contact', document.getElementById('newSupplierContact').value.trim());
+    formData.append('phone', phone);
+    formData.append('email', document.getElementById('newSupplierEmail').value.trim());
+    formData.append('address', document.getElementById('newSupplierAddress').value.trim());
+
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 创建中...';
+
+    try {
+        const resp = await fetch('/api/supplier/quick_add', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success) {
+            // 添加到两个供应商下拉框
+            const opt = new Option(data.name, data.id);
+            document.getElementById('newFurnitureSupplier').appendChild(opt.cloneNode(true));
+            const opt2 = new Option(data.name, data.id);
+            furnitureSelect.parentElement.querySelectorAll('select').forEach(sel => {
+                // 也更新主页面可能存在的其他供应商select
+            });
+            // 选中新建的供应商
+            document.getElementById('newFurnitureSupplier').value = data.id;
+            supplierCreateStatus.innerHTML = '<span class="text-success">✔ 已创建并选中</span>';
+            // 清空表单
+            document.getElementById('newSupplierName').value = '';
+            document.getElementById('newSupplierContact').value = '';
+            document.getElementById('newSupplierPhone').value = '';
+            document.getElementById('newSupplierEmail').value = '';
+            document.getElementById('newSupplierAddress').value = '';
+            // 自动收起
+            setTimeout(() => showNewSupplierPanel(false), 500);
+        } else {
+            supplierCreateStatus.innerHTML = `<span class="text-danger">✘ ${data.error}</span>`;
+        }
+    } catch(e) {
+        supplierCreateStatus.innerHTML = `<span class="text-danger">✘ 网络错误: ${e.message}</span>`;
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-check-lg"></i> 确认创建';
+    }
+});
+
+// ===== 确认创建家具 (AJAX) =====
+confirmNewFurnitureBtn.addEventListener('click', async function() {
+    const name = document.getElementById('newFurnitureName').value.trim();
+    const category = document.getElementById('newFurnitureCategory').value;
+    const supplier = document.getElementById('newFurnitureSupplier').value;
+    const price = document.getElementById('newFurniturePrice').value;
+
+    if (!name || !category || !supplier || !price) {
+        furnitureCreateStatus.innerHTML = '<span class="text-danger">请填写家具名称、类型、供应商和单价</span>';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('category', category);
+    formData.append('supplier', supplier);
+    formData.append('price', price);
+    formData.append('desc', document.getElementById('newFurnitureDesc').value.trim());
+
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 创建中...';
+
+    try {
+        const resp = await fetch('/api/furniture/quick_add', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success) {
+            // 添加到主下拉框
+            const opt = new Option(data.name + ' (库存: 0)', data.id);
+            opt.dataset.price = price;
+            furnitureSelect.appendChild(opt);
+            furnitureSelect.value = data.id;
+            entryPrice.value = price;
+            // 收起新建面板
+            showNewFurniturePanel(false);
+            // 清空表单
+            document.getElementById('newFurnitureName').value = '';
+            document.getElementById('newFurniturePrice').value = '';
+            document.getElementById('newFurnitureDesc').value = '';
+            document.getElementById('newFurnitureCategory').value = '';
+            document.getElementById('newFurnitureSupplier').value = '';
+            furnitureCreateStatus.innerHTML = '<span class="text-success">✔ 已创建并选中</span>';
+            setTimeout(() => furnitureCreateStatus.innerHTML = '', 2000);
+        } else {
+            furnitureCreateStatus.innerHTML = `<span class="text-danger">✘ ${data.error}</span>`;
+        }
+    } catch(e) {
+        furnitureCreateStatus.innerHTML = `<span class="text-danger">✘ 网络错误: ${e.message}</span>`;
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-check-lg"></i> 确认创建并选择';
+    }
+});
+</script>
+{% endblock %}
