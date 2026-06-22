@@ -1,25 +1,272 @@
-Microsoft (R) Macro Assembler Version 6.11		    04/13/26 19:57:47
+Microsoft (R) Macro Assembler Version 6.11		    06/22/26 20:36:22
 tempfile.asm						     Page 1 - 1
 
 
-				.model tiny
+				.model small
+				.stack 100h
+
+ 0000				.data
+ 0000 49 6E 70 75 74 20		msg_n db 'Input n: $'
+       6E 3A 20 24
+ 000A 0D 0A 49 6E 70 75		msg_num db 13,10,'Input number: $'
+       74 20 6E 75 6D 62
+       65 72 3A 20 24
+ 001B 0D 0A 53 6F 72 74		msg_out db 13,10,'Sorted result: $'
+       65 64 20 72 65 73
+       75 6C 74 3A 20 24
+ 002D 0D 0A 34 32 34 30		msg_tail db 13,10,'42407194 wangjiaxuan','$'
+       37 31 39 34 20 77
+       61 6E 67 6A 69 61
+       78 75 61 6E 24
+
+ 0044  0064 [			array dw 100 dup(?)
+        0000
+       ]
+ 010C 0000			n dw ?
+
  0000				.code
-				org 100h
- 0100				start:
- 0100  BC 00B0			    mov sp, 00B0h
- 0103  B8 8057			    mov ax, 8057h
- 0106  BB 0F79			    mov bx, 0F79h
- 0109  50			    push ax
- 010A  53			    push bx
- 010B  58			    pop ax
- 010C  5B			    pop bx          ; Completes swap: AX=0F79h, BX=8057h
 
- 010D  B4 4C			    mov ah, 4Ch     ; Exit to DOS
- 010F  CD 21			    int 21h
-				end start
+ 0000				main proc
+ 0000  B8 ---- R		    mov ax,@data
+ 0003  8E D8			    mov ds,ax
+
+				;---------------- input n ----------------
+ 0005  8D 16 0000 R		    lea dx,msg_n
+ 0009  B4 09			    mov ah,09h
+ 000B  CD 21			    int 21h
+
+ 000D  E8 00D2			    call input_num
+ 0010  A3 010C R		    mov n,ax
+
+				;---------------- input array ----------------
+ 0013  8B 0E 010C R		    mov cx,n
+ 0017  BE 0000			    mov si,0
+
+ 001A				input_loop:
+ 001A  8D 16 000A R		    lea dx,msg_num
+ 001E  B4 09			    mov ah,09h
+ 0020  CD 21			    int 21h
+
+ 0022  E8 00BD			    call input_num
+ 0025  89 84 0044 R		    mov array[si],ax
+
+ 0029  83 C6 02			    add si,2
+ 002C  E2 EC			    loop input_loop
+
+				;---------------- quicksort ----------------
+ 002E  A1 010C R		    mov ax,n
+ 0031  48			    dec ax
+ 0032  50			    push ax        ; high
+ 0033  B8 0000			    mov ax,0
+ 0036  50			    push ax        ; low
+ 0037  E8 002D			    call quicksort
+
+				;---------------- output ----------------
+ 003A  8D 16 001B R		    lea dx,msg_out
+ 003E  B4 09			    mov ah,09h
+ 0040  CD 21			    int 21h
+
+ 0042  8B 0E 010C R		    mov cx,n
+ 0046  BE 0000			    mov si,0
+
+ 0049				print_loop:
+ 0049  8B 84 0044 R		    mov ax,array[si]
+ 004D  E8 00B8			    call print_num
+
+ 0050  B2 20			    mov dl,' '
+ 0052  B4 02			    mov ah,02h
+ 0054  CD 21			    int 21h
+
+ 0056  83 C6 02			    add si,2
+ 0059  E2 EE			    loop print_loop
+
+ 005B  8D 16 002D R		    lea dx,msg_tail
+ 005F  B4 09			    mov ah,09h
+ 0061  CD 21			    int 21h
+
+ 0063  B4 4C			    mov ah,4ch
+ 0065  CD 21			    int 21h
+ 0067				main endp
 
 
-Microsoft (R) Macro Assembler Version 6.11		    04/13/26 19:57:47
+				;====================================================
+				; quicksort(low, high)
+				; [bp+4]=low [bp+6]=high
+				;====================================================
+ 0067				quicksort proc near
+ 0067  55			    push bp
+ 0068  8B EC			    mov bp,sp
+
+ 006A  50			    push ax
+ 006B  53			    push bx
+ 006C  51			    push cx
+ 006D  52			    push dx
+ 006E  56			    push si
+ 006F  57			    push di
+
+ 0070  8B 76 04			    mov si,[bp+4]     ; low
+ 0073  8B 7E 06			    mov di,[bp+6]     ; high
+
+ 0076  3B F7			    cmp si,di
+ 0078  7D 5E			    jge qs_end
+
+				;---------------- pivot = array[low] ----------------
+ 007A  8B DE			    mov bx,si
+ 007C  D1 E3			    shl bx,1
+ 007E  8B 97 0044 R		    mov dx,array[bx]   ; pivot
+
+				; i = low, j = high
+ 0082  8B 76 04			    mov si,[bp+4]
+ 0085  8B 7E 06			    mov di,[bp+6]
+
+ 0088				partition:
+
+				;---------------- left scan ----------------
+ 0088				left_scan:
+ 0088  8B DE			    mov bx,si
+ 008A  D1 E3			    shl bx,1
+ 008C  39 97 0044 R		    cmp array[bx],dx
+ 0090  7D 03			    jge right_scan
+ 0092  46			    inc si
+ 0093  EB F3			    jmp left_scan
+
+				;---------------- right scan ----------------
+ 0095				right_scan:
+ 0095  8B DF			    mov bx,di
+ 0097  D1 E3			    shl bx,1
+ 0099  39 97 0044 R		    cmp array[bx],dx
+ 009D  7E 03			    jle check_swap
+ 009F  4F			    dec di
+ 00A0  EB F3			    jmp right_scan
+
+				;---------------- swap ----------------
+ 00A2				check_swap:
+ 00A2  3B F7			    cmp si,di
+ 00A4  7F 22			    jg partition_end
+
+ 00A6  8B DE			    mov bx,si
+ 00A8  D1 E3			    shl bx,1
+ 00AA  8B 87 0044 R		    mov ax,array[bx]     ; temp1
+
+ 00AE  8B C8			    mov cx,ax            ; save
+
+ 00B0  8B DF			    mov bx,di
+ 00B2  D1 E3			    shl bx,1
+ 00B4  8B 87 0044 R		    mov ax,array[bx]     ; temp2
+
+ 00B8  89 8F 0044 R		    mov array[bx],cx
+
+ 00BC  8B DE			    mov bx,si
+ 00BE  D1 E3			    shl bx,1
+ 00C0  89 87 0044 R		    mov array[bx],ax
+
+ 00C4  46			    inc si
+ 00C5  4F			    dec di
+ 00C6  EB C0			    jmp partition
+
+ 00C8				partition_end:
+
+				; quicksort(low, di)
+ 00C8  8B 46 04			    mov ax,[bp+4]
+ 00CB  57			    push di
+ 00CC  50			    push ax
+ 00CD  E8 FF97			    call quicksort
+
+				; quicksort(si, high)
+ 00D0  8B 46 06			    mov ax,[bp+6]
+ 00D3  50			    push ax
+ 00D4  56			    push si
+ 00D5  E8 FF8F			    call quicksort
+
+ 00D8				qs_end:
+ 00D8  5F			    pop di
+ 00D9  5E			    pop si
+ 00DA  5A			    pop dx
+ 00DB  59			    pop cx
+ 00DC  5B			    pop bx
+ 00DD  58			    pop ax
+ 00DE  5D			    pop bp
+ 00DF  C2 0004			    ret 4
+ 00E2				quicksort endp
+
+
+				;====================================================
+				; 输入十进制数
+				;====================================================
+ 00E2				input_num proc near
+ 00E2  53			    push bx
+ 00E3  51			    push cx
+ 00E4  52			    push dx
+
+ 00E5  33 DB			    xor bx,bx
+
+ 00E7				read:
+ 00E7  B4 01			    mov ah,01h
+ 00E9  CD 21			    int 21h
+
+ 00EB  3C 0D			    cmp al,13
+ 00ED  74 13			    je done
+
+ 00EF  2C 30			    sub al,'0'
+ 00F1  B4 00			    mov ah,0
+
+ 00F3  50			    push ax
+
+ 00F4  8B C3			    mov ax,bx
+ 00F6  BA 000A			    mov dx,10
+ 00F9  F7 E2			    mul dx
+ 00FB  8B D8			    mov bx,ax
+
+ 00FD  58			    pop ax
+ 00FE  03 D8			    add bx,ax
+ 0100  EB E5			    jmp read
+
+ 0102				done:
+ 0102  8B C3			    mov ax,bx
+
+ 0104  5A			    pop dx
+ 0105  59			    pop cx
+ 0106  5B			    pop bx
+ 0107  C3			    ret
+ 0108				input_num endp
+
+
+				;====================================================
+				; 输出十进制数
+				;====================================================
+ 0108				print_num proc near
+ 0108  50			    push ax
+ 0109  53			    push bx
+ 010A  51			    push cx
+ 010B  52			    push dx
+
+ 010C  BB 000A			    mov bx,10
+ 010F  33 C9			    xor cx,cx
+
+ 0111				div_loop:
+ 0111  33 D2			    xor dx,dx
+ 0113  F7 F3			    div bx
+ 0115  52			    push dx
+ 0116  41			    inc cx
+ 0117  83 F8 00			    cmp ax,0
+ 011A  75 F5			    jne div_loop
+
+ 011C				print_loop:
+ 011C  5A			    pop dx
+ 011D  80 C2 30			    add dl,'0'
+ 0120  B4 02			    mov ah,02h
+ 0122  CD 21			    int 21h
+ 0124  E2 F6			    loop print_loop
+
+ 0126  5A			    pop dx
+ 0127  59			    pop cx
+ 0128  5B			    pop bx
+ 0129  58			    pop ax
+ 012A  C3			    ret
+ 012B				print_num endp
+
+				end main
+Microsoft (R) Macro Assembler Version 6.11		    06/22/26 20:36:22
 tempfile.asm						     Symbols 2 - 1
 
 
@@ -30,8 +277,31 @@ Segments and Groups:
                 N a m e                 Size     Length   Align   Combine Class
 
 DGROUP . . . . . . . . . . . . .	GROUP
-_TEXT  . . . . . . . . . . . . .	16 Bit	 0111	  Word	  Public  'CODE'	
-_DATA  . . . . . . . . . . . . .	16 Bit	 0000	  Word	  Public  'DATA'	
+_DATA  . . . . . . . . . . . . .	16 Bit	 010E	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0100	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 012B	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+input_num  . . . . . . . . . . .	P Near	 00E2	  _TEXT	Length= 0026 Public
+  read . . . . . . . . . . . . .	L Near	 00E7	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0102	  _TEXT	
+main . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0067 Public
+  input_loop . . . . . . . . . .	L Near	 001A	  _TEXT	
+  print_loop . . . . . . . . . .	L Near	 0049	  _TEXT	
+print_num  . . . . . . . . . . .	P Near	 0108	  _TEXT	Length= 0023 Public
+  div_loop . . . . . . . . . . .	L Near	 0111	  _TEXT	
+  print_loop . . . . . . . . . .	L Near	 011C	  _TEXT	
+quicksort  . . . . . . . . . . .	P Near	 0067	  _TEXT	Length= 007B Public
+  partition  . . . . . . . . . .	L Near	 0088	  _TEXT	
+  left_scan  . . . . . . . . . .	L Near	 0088	  _TEXT	
+  right_scan . . . . . . . . . .	L Near	 0095	  _TEXT	
+  check_swap . . . . . . . . . .	L Near	 00A2	  _TEXT	
+  partition_end  . . . . . . . .	L Near	 00C8	  _TEXT	
+  qs_end . . . . . . . . . . . .	L Near	 00D8	  _TEXT	
 
 
 Symbols:
@@ -41,13 +311,18 @@ Symbols:
 @CodeSize  . . . . . . . . . . .	Number	 0000h	 
 @DataSize  . . . . . . . . . . .	Number	 0000h	 
 @Interface . . . . . . . . . . .	Number	 0000h	 
-@Model . . . . . . . . . . . . .	Number	 0001h	 
-@code  . . . . . . . . . . . . .	Text   	 DGROUP
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
 @data  . . . . . . . . . . . . .	Text   	 DGROUP
 @fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
 @fardata . . . . . . . . . . . .	Text   	 FAR_DATA
 @stack . . . . . . . . . . . . .	Text   	 DGROUP
-start  . . . . . . . . . . . . .	L Near	 0100	  _TEXT	
+array  . . . . . . . . . . . . .	Word	 0044	  _DATA	
+msg_num  . . . . . . . . . . . .	Byte	 000A	  _DATA	
+msg_n  . . . . . . . . . . . . .	Byte	 0000	  _DATA	
+msg_out  . . . . . . . . . . . .	Byte	 001B	  _DATA	
+msg_tail . . . . . . . . . . . .	Byte	 002D	  _DATA	
+n  . . . . . . . . . . . . . . .	Word	 010C	  _DATA	
 
 	   0 Warnings
 	   0 Errors

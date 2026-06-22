@@ -5,7 +5,6 @@
 msg_n db 'Input n: $'
 msg_num db 13,10,'Input number: $'
 msg_out db 13,10,'Sorted result: $'
-msg_tail db 13,10,'42407194 wangjiaxuan','$'
 
 array dw 100 dup(?)
 n dw ?
@@ -65,7 +64,7 @@ print_loop:
 
     add si,2
     loop print_loop
-
+    
     lea dx,msg_tail
     mov ah,09h
     int 21h
