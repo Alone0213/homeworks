@@ -1,0 +1,2 @@
+[permissions]
+allow = ["Bash(Get-ChildItem \"39_王嘉轩_实验四：综合协议分析（2次实验课）.doc\":*)"]

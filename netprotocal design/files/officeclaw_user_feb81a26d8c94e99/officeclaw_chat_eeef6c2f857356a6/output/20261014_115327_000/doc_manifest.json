@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "pptx-craft-doc-parse-v2",
+  "generatedAt": "2026-10-14T03:53:47.455Z",
+  "outputDir": "F:\\code\\homeworks\\netprotocal design\\files\\officeclaw_user_feb81a26d8c94e99\\officeclaw_chat_eeef6c2f857356a6\\output\\20261014_115327_000",
+  "rawPath": "F:\\code\\homeworks\\netprotocal design\\files\\officeclaw_user_feb81a26d8c94e99\\officeclaw_chat_eeef6c2f857356a6\\output\\20261014_115327_000\\doc_raw.md",
+  "summaryPath": "F:\\code\\homeworks\\netprotocal design\\files\\officeclaw_user_feb81a26d8c94e99\\officeclaw_chat_eeef6c2f857356a6\\output\\20261014_115327_000\\doc_summary.md",
+  "documentsDir": "F:\\code\\homeworks\\netprotocal design\\files\\officeclaw_user_feb81a26d8c94e99\\officeclaw_chat_eeef6c2f857356a6\\output\\20261014_115327_000\\documents",
+  "parserRuntime": {
+    "engine": "anydoc",
+    "anydoc": {
+      "engine": "anydoc-wasm",
+      "version": "0.1.9",
+      "wasmPath": "D:\\Programs\\OfficeAce\\office-claw-skills\\pptx-craft\\packages\\core\\assets\\anydoc\\anydoc_wasm_bg.wasm",
+      "available": true
+    }
+  },
+  "imagesExtracted": false,
+  "imageStats": null,
+  "assetNotes": [],
+  "selectedCount": 1,
+  "skippedCount": 0,
+  "documents": [
+    {
+      "sourceId": "user-doc-001",
+      "citationLabel": "《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲(修订版)",
+      "input": "D:\\Programs\\OfficeAce\\data\\uploads\\《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲（修订版）.md",
+      "ext": ".md",
+      "basename": "《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲（修订版）.md",
+      "bytes": 17408,
+      "status": "converted",
+      "engine": "direct-text",
+      "output": "F:\\code\\homeworks\\netprotocal design\\files\\officeclaw_user_feb81a26d8c94e99\\officeclaw_chat_eeef6c2f857356a6\\output\\20261014_115327_000\\documents\\《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲(修订版)__md__02c6168f.md",
+      "chars": 7590,
+      "lines": 142,
+      "cleanupWarnings": []
+    }
+  ]
+}

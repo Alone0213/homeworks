@@ -1,0 +1,378 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- custom 脚手架（内容页）：提供与预设风格同构的**页面基础框架**（安全区 + 标题栏 + 正文区 + 页脚），
+       保证跨页锚点一致；观感（配色、字体、圆角、阴影、密度）仍全部由 style-custom.md 的 CSS 变量决定。
+       slide-designer 只填 PAGE_TITLE / PAGE_CONTENT / PAGE_FOOTER，不得重写或删除框架本身。
+       PAGE_FOOTER 只放来源/口径注释；用户要求页码时，把「当前页/总页数」文字填入页脚右侧
+       独立的 <span data-pptx-role="page-number"> 槽位，不要嵌进 PAGE_FOOTER，不要使用绝对定位。 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>PPT Slide</title>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/tailwind.js"></script>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/echarts.min.js"></script>
+  <link href="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/css/fonts.css" rel="stylesheet">
+
+  <style id="theme-contract">
+    :root {
+      /* 视觉变量由 style-custom.md 通过 THEME_CSS_VARIABLES 注入；字体缺失时使用中性栈 */
+      --font-family: "Noto Sans SC", sans-serif;
+      --color-bg: #FFFFFF;
+--color-surface: #F9FAFB;
+--color-text: #1F2937;
+--color-muted: #6B7280;
+--color-accent: #2563EB;
+--font-family: "Noto Sans SC", sans-serif;
+--radius-card: 8px;
+--shadow-card: 0 2px 8px rgba(31, 41, 55, 0.06);
+--content-density: comfortable;
+    }
+  </style>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 硬约束：幻灯片画布固定 1280×720，溢出由 check-layout 只读检测 */
+      .ppt-slide {
+        @apply relative w-[1280px] h-[720px] mx-auto box-border overflow-hidden;
+      }
+      .ppt-slide *,
+      .ppt-slide *::before,
+      .ppt-slide *::after {
+        @apply box-border;
+        max-width: 100%;
+      }
+      .ppt-slide img {
+        @apply max-w-full max-h-full;
+      }
+
+      .ppt-slide video,
+      .ppt-slide svg,
+      .ppt-slide .echarts-main,
+      .ppt-slide .chart-container,
+      .ppt-slide [id*="chart" i] {
+        @apply max-w-full max-h-full object-contain;
+      }
+      /* 图表容器最小尺寸保护：仅供初始化兜底，实际高度由正文槽逐层分配 */
+      .ppt-slide [id*="chart" i],
+      .ppt-slide .chart-container,
+      .ppt-slide .echarts-main {
+        width: 100%;
+        height: 100%;
+        min-height: 160px;
+      }
+      .ppt-slide :has(> [id*="chart" i]),
+      .ppt-slide :has(> .chart-container),
+      .ppt-slide :has(> .echarts-main) {
+        min-height: 160px;
+      }
+      /* ===== 页面基础框架（跨页锚点，逐字保留）=====
+         几何在此固定，保证 N 页之间标题栏高度、正文区起止和页脚位置完全一致；
+         颜色/字号只引用 style-custom.md 注入的变量，未定义时用中性 fallback。 */
+      .content-safe {
+        @apply w-[1220px] h-[660px] my-[30px] mx-auto flex flex-col overflow-hidden;
+      }
+      /* 注意：布局类（flex / flex-1 / min-h-0 / overflow-hidden / flex-shrink-0）写在元素 class 上，
+         不放进这里——fix 的 layout 步骤只看 class 属性，放进 utilities 会被它重复追加一遍。
+         这几个类只承担内边距与文字观感。 */
+      .page-header {
+        @apply pt-[16px] pb-[14px];
+      }
+      .page-title {
+        @apply text-[36px] font-semibold leading-[1.2];
+        color: var(--color-text, #172033);
+      }
+      /* pt 是正文区与页脚注之间唯一的呼吸位：page-main 是 flex-1，底边必然贴住页脚框，
+         正文里任何铺满高度的白卡片都会直接顶到这里。12px 实测（2026-08-12）显得局促，
+         卡片下沿几乎压着来源行；给到 24px。改小它等于让每页正文重新贴住页脚。 */
+      .page-footer {
+        @apply pt-[24px] pb-[14px] items-end justify-between gap-[24px];
+      }
+      .page-footer-note {
+        @apply text-[12px] leading-[1.5];
+        color: var(--color-muted, #667085);
+      }
+      /* 页码槽位：页脚右侧的独立子元素，与来源文字并列；未要求页码时保持为空并整体隐藏 */
+      .page-footer-number {
+        @apply text-[12px] leading-[1.5];
+        color: var(--color-muted, #667085);
+      }
+      .page-footer-number:empty { display: none; }
+
+      /* 导出安全：模糊滤镜无法矢量导出，统一剥离 */
+      .ppt-slide [class*="blur"],
+      .ppt-slide [style*="blur"] {
+        filter: none !important;
+        backdrop-filter: none !important;
+      }
+      .ppt-slide [class*="backdrop-blur"],
+      .ppt-slide [style*="backdrop-filter"] {
+        backdrop-filter: none !important;
+      }
+    }
+  </style>
+
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; }
+    .ppt-slide, .ppt-slide svg { font-family: var(--font-family); }
+  </style>
+
+  <style id="theme-rules">
+    /* 全局样式规则槽：由 style-custom.md 的全局 CSS 规则块逐字填入（如标题、卡片、列表的共享样式）；
+       风格文件未提供时替换为空，页面样式由 slide-designer 在本页自由编写 */
+    .ppt-slide {
+  background-color: var(--color-bg);
+}
+.page-header {
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.page-main {
+  color: var(--color-text);
+  line-height: 1.7;
+}
+.page-footer {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+  </style>
+</head>
+
+<body>
+  <div class="ppt-slide flex flex-col" type="content">
+    <div class="content-safe">
+      <!-- 标题栏（跨页锚点）：只替换 PAGE_TITLE，不得改高度、改层级或整段删除 -->
+      <header class="page-header flex-shrink-0">
+        <h1 class="page-title">实验设计与测试环境配置</h1>
+      </header>
+
+      <!-- 正文区：把 3.1 切出的块**直接**作为本元素的并列子元素（内容页 ≥ 2 个），每块自带高度归属。
+           page-main 本身就是根容器，不要再套一层"唯一根容器"——那样 main 只剩 1 个子元素，
+           fix 会报 "main 仅有 1 个子元素，需至少 2 个"，而那条只能靠切块消除，绝不能靠删容器。
+           最小骨架示例（结构照搬，类名与内容按 style-custom.md 和本页素材来）：
+             <section class="flex-shrink-0"> 结论条／关键指标行 </section>
+             <div class="flex-1 min-h-0 grid grid-cols-[3fr_2fr] gap-6"> 左右两栏／图表 + 说明 </div>
+           需要分栏时把 grid／flex-row 写在其中一个块上，让它和别的块并列，而不是拿它包住全部内容。 -->
+      <main class="page-main flex-1 min-h-0 flex flex-col overflow-hidden">
+        
+        <section class="flex-shrink-0 flex items-center gap-3 px-4 py-2 rounded-[8px]" style="background-color: var(--color-surface); border-left: 3px solid var(--color-accent);">
+          <span class="text-[14px] font-semibold whitespace-nowrap" style="color: var(--color-accent);">核心目标</span>
+          <span class="text-[14px] leading-[1.5]" style="color: var(--color-text);">实验覆盖6类网络环境与4类终端，以无节流广播和公网中转为基线对照，确保性能数据可复现</span>
+        </section>
+
+        <section class="flex-shrink-0 grid grid-cols-4 gap-3 mt-3">
+          <div class="px-3 py-2 rounded-[8px] border border-[#E5E7EB]">
+            <div class="text-[11px] font-medium" style="color: var(--color-muted);">网络环境组数</div>
+            <div class="text-[22px] font-semibold leading-[1.3] mt-1" style="color: var(--color-text);">6 <span class="text-[12px] font-normal" style="color: var(--color-muted);">组</span></div>
+            <div class="text-[11px] leading-[1.4] mt-1" style="color: var(--color-muted);">含千兆/百兆/Wi-Fi 5/Wi-Fi 6/跨网段/4G·5G</div>
+          </div>
+          <div class="px-3 py-2 rounded-[8px] border border-[#E5E7EB]">
+            <div class="text-[11px] font-medium" style="color: var(--color-muted);">测试终端</div>
+            <div class="text-[22px] font-semibold leading-[1.3] mt-1" style="color: var(--color-text);">4 <span class="text-[12px] font-normal" style="color: var(--color-muted);">类</span></div>
+            <div class="text-[11px] leading-[1.4] mt-1" style="color: var(--color-muted);">Chrome·Edge·Firefox + 中端安卓手机</div>
+          </div>
+          <div class="px-3 py-2 rounded-[8px] border border-[#E5E7EB]">
+            <div class="text-[11px] font-medium" style="color: var(--color-muted);">Mesh人数上限</div>
+            <div class="text-[22px] font-semibold leading-[1.3] mt-1" style="color: var(--color-text);">6 <span class="text-[12px] font-normal" style="color: var(--color-muted);">人</span></div>
+            <div class="text-[11px] leading-[1.4] mt-1" style="color: var(--color-muted);">P2P网状架构，单向延迟&lt;200ms</div>
+          </div>
+          <div class="px-3 py-2 rounded-[8px] border border-[#E5E7EB]">
+            <div class="text-[11px] font-medium" style="color: var(--color-muted);">测试文件大小</div>
+            <div class="text-[22px] font-semibold leading-[1.3] mt-1" style="color: var(--color-text);">100 <span class="text-[12px] font-normal" style="color: var(--color-muted);">MB</span></div>
+            <div class="text-[11px] leading-[1.4] mt-1" style="color: var(--color-muted);">局域网直传速率≥75MB/s</div>
+          </div>
+        </section>
+
+        <div class="flex-1 min-h-0 grid grid-cols-[1fr_1fr] gap-4 mt-3">
+          <section class="flex flex-col min-h-0" data-block="comparison">
+            <h2 class="flex-shrink-0 text-[14px] font-semibold mb-2" style="color: var(--color-text);">测试环境与对照基线</h2>
+            <div class="flex-1 min-h-0 overflow-auto">
+              <table class="w-full text-[12px] border-collapse" style="color: var(--color-text);">
+                <thead>
+                  <tr style="background-color: var(--color-surface);">
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">维度</th>
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">对象1</th>
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">对象2</th>
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">对象3</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-medium">网络环境</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">千兆以太网</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">百兆以太网</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">Wi-Fi 5</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-medium">网络环境续</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">Wi-Fi 6同网段</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">跨网段校园网</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">4G / 5G</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-medium">测试终端</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">Chrome最新版</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">Edge最新版</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">Firefox最新版</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-medium">对照基线</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">无节流广播</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">公网中转HTTP</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">注入丢包语音</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="flex flex-col min-h-0" data-block="evidence">
+            <h2 class="flex-shrink-0 text-[14px] font-semibold mb-2" style="color: var(--color-text);">预期性能指标</h2>
+            <div class="flex-1 min-h-0 overflow-auto">
+              <table class="w-full text-[12px] border-collapse" style="color: var(--color-text);">
+                <thead>
+                  <tr style="background-color: var(--color-surface);">
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">指标</th>
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">目标值</th>
+                    <th class="text-left font-semibold px-2 py-1.5 border border-[#E5E7EB]" style="color: var(--color-muted);">测试场景</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">绘图延迟 p50</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-semibold" style="color: var(--color-accent);">&lt;100 ms</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">局域网5人房间</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">绘图延迟 p95</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-semibold" style="color: var(--color-accent);">&lt;200 ms</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">局域网5人房间</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">文件传输速率</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-semibold" style="color: var(--color-accent);">≥75 MB/s</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">千兆以太网</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">链路带宽占比</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-semibold" style="color: var(--color-accent);">≥60 %</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">局域网直传</td>
+                  </tr>
+                  <tr>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">语音单向延迟</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB] font-semibold" style="color: var(--color-accent);">&lt;200 ms</td>
+                    <td class="px-2 py-1.5 border border-[#E5E7EB]">WebRTC音频</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <section class="flex-shrink-0 grid grid-cols-3 gap-3 mt-3" data-block="case">
+          <div class="px-3 py-2 rounded-[8px]" style="background-color: var(--color-surface);">
+            <div class="text-[12px] font-semibold mb-1" style="color: var(--color-text);">白板基线</div>
+            <div class="text-[11px] leading-[1.5]" style="color: var(--color-muted);">无节流逐条广播，5人房间绘图 p50&lt;100ms、p95&lt;200ms</div>
+          </div>
+          <div class="px-3 py-2 rounded-[8px]" style="background-color: var(--color-surface);">
+            <div class="text-[12px] font-semibold mb-1" style="color: var(--color-text);">文件基线</div>
+            <div class="text-[11px] leading-[1.5]" style="color: var(--color-muted);">公网中转HTTP，千兆直传100MB文件达链路带宽60%以上</div>
+          </div>
+          <div class="px-3 py-2 rounded-[8px]" style="background-color: var(--color-surface);">
+            <div class="text-[12px] font-semibold mb-1" style="color: var(--color-text);">语音对照</div>
+            <div class="text-[11px] leading-[1.5]" style="color: var(--color-muted);">无丢包 vs 注入丢包，3-6人P2P单向延迟&lt;200ms (ITU-T G.114)</div>
+          </div>
+        </section>
+      
+      </main>
+
+      <!-- 页脚（跨页锚点）：数据来源/口径注释，以及用户显式要求时的页码，统一落在这里 -->
+      <footer class="page-footer flex-shrink-0 flex" data-pptx-footer="custom">
+        <p class="page-footer-note flex-1 min-w-0"></p>
+        <span class="page-footer-number flex-shrink-0" data-pptx-role="page-number"></span>
+      </footer>
+    </div>
+  </div>
+    <!-- CHART_SCAFFOLD_BEGIN
+    <script data-pptx-chart-scaffold="v1">
+      /*
+       * 图表骨架（图表候选页激活；非图表页保持注释即可，对浏览器与 fix 零副作用）。
+       * 重要：说明文字必须写在本 script 内的 JS 块注释中，禁止写在 HTML 注释定界符与
+       * script 之间（否则激活后会成为页面可见裸文本）。
+       *
+       * 激活步骤：
+       *   1) 图表块先从 PAGE_CONTENT 的 Grid/Flex 区域获得确定高度；纵向 Flex 槽示例：
+       *        div.flex-1.min-h-0.flex.flex-col > div.flex-1.min-h-0 > div#chart-1.w-full.h-full
+       *      Grid 单元由行轨道分配高度；块内标题/说明用 flex-shrink-0，绘图包装器消费剩余高度。
+       *      h-full 的直接父容器必须有可解析高度；中间不能只靠内容撑高，min-height 兜底不能代替高度链。
+       *   2) 把下方 const option = null 的 null 替换为真实图表 option（series/data/xAxis/yAxis 等）。
+       *   3) 保存页面后运行 activate-template-chart，由命令成对移除外层注释；不得手工删除定界符。
+       *      完整命令见 references/designer/charts.md 或本页任务；填好数据不等于已激活。
+       *
+       * 骨架已内置硬约束（机制勿改）：SVG renderer · animation:false 强制 · 全局 textStyle.fontFamily · IIFE · formatter 外部函数。
+       * CHART_FONT_FAMILY 必须等于当前风格 style.md（custom 为 style-custom.md）frontmatter 的完整字体栈：
+       *   预设风格模板已预置正确值（勿改）；custom 模板为中性占位值，必须替换后再激活。
+       * 仍需 designer 自觉遵守（骨架不强制）：
+       *   - 禁止渐变（colorStops、type 为 linear 或 radial、echarts.graphic.LinearGradient 等会触发导出位图化）；
+       *     折线/面积图 areaStyle.color 用半透明纯色，如 rgba(<风格主色>, 0.18)，色值以 style.md 为准。
+       *   - 坐标轴/图例/数据标签的 fontFamily/color 按 style.md 图表色规范设置。
+       * 设计约束：外层 HTML 注释（BEGIN 与 END 之间）任何位置都不得出现 HTML 注释结束符
+       * 或连续减号，否则会提前终止外层注释、让非图表页误执行图表代码。
+       * 多图表：每段独立成 HTML 注释块（CHART_SCAFFOLD_BEGIN 与 CHART_SCAFFOLD_2_BEGIN ），并把第二段标签改为 _2_ 以便区分；切勿把第二段粘贴到第一段注释内部，否则外层注释会在内层第一个 HTML标签注释结束符（减号减号大于号）处提前闭合。改 id（chart-1 改 chart-2）与 getElementById 入参。
+       */
+      (function () {
+        const CHART_FONT_FAMILY = "Noto Sans SC, sans-serif";
+        // formatter 外部函数模板：
+        //   axisLabel / xAxis / yAxis 的 formatter 接收原始数值；
+        //   series.label / tooltip 的 formatter 接收 params 对象（需取 .value）。
+        function formatAxisNumber(v) {
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatAxisPercent(v) {
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatAxisPercentAsIs(v) {
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        function formatLabelNumber(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatLabelPercent(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatLabelPercentAsIs(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        const el = document.getElementById("chart-1");
+        if (!el) return;
+        // 激活后把下方 null 替换为图表 option 对象，例如：
+        //   { xAxis:{type:"category",data:[...]}, yAxis:{type:"value"}, series:[{data:[...],type:"bar"}] }
+        // 注意：option 校验必须在 echarts.init 之前，否则未替换 null 时仍会创建实例并产出空 SVG，
+        // 进而被 convert 阶段渲染为空图（fix 已不再落盘 ECharts，由 convert 阶段现场渲染）。
+        const option = null;
+        if (!option) return; // 未填 option 则跳过，避免执行 echarts.init 产出空图
+        const chart = echarts.init(el, null, { renderer: "svg" });
+        option.animation = false; // 强制禁动画，PPT 静态输出必须禁用，不可覆盖
+        option.textStyle = Object.assign({ fontFamily: CHART_FONT_FAMILY }, option.textStyle);
+        chart.setOption(option);
+      })();
+    </script>
+    CHART_SCAFFOLD_END -->
+</body>
+
+</html>

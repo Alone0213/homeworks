@@ -1,0 +1,167 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- custom 脚手架（封面页）：不预设任何页面结构与视觉样式，仅提供导出必需的依赖与 1280×720 硬约束。
+       页面结构、布局、配色、字号全部由 slide-designer 依据 style-custom.md 与本页内容自由设计。 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>基于 Web 的协同白板与实时音视频<br>及局域网快传系统</title>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/tailwind.js"></script>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/echarts.min.js"></script>
+  <link href="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/css/fonts.css" rel="stylesheet">
+
+  <style id="theme-contract">
+    :root {
+      /* 视觉变量由 style-custom.md 通过 THEME_CSS_VARIABLES 注入；字体缺失时使用中性栈 */
+      --font-family: "Noto Sans SC", sans-serif;
+      --color-bg: #FFFFFF;
+--color-surface: #F9FAFB;
+--color-text: #1F2937;
+--color-muted: #6B7280;
+--color-accent: #2563EB;
+--radius-card: 8px;
+--shadow-card: 0 2px 8px rgba(31, 41, 55, 0.06);
+--content-density: comfortable;
+    }
+  </style>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 硬约束：幻灯片画布固定 1280×720，溢出由 check-layout 只读检测 */
+      .ppt-slide {
+        @apply relative w-[1280px] h-[720px] mx-auto box-border overflow-hidden;
+      }
+      .ppt-slide *,
+      .ppt-slide *::before,
+      .ppt-slide *::after {
+        @apply box-border;
+        max-width: 100%;
+      }
+      .ppt-slide img {
+        @apply max-w-full max-h-full;
+      }
+
+      .ppt-slide video,
+      .ppt-slide svg {
+        @apply max-w-full max-h-full object-contain;
+      }
+      /* 导出安全：模糊滤镜无法矢量导出，统一剥离 */
+      .ppt-slide [class*="blur"],
+      .ppt-slide [style*="blur"] {
+        filter: none !important;
+        backdrop-filter: none !important;
+      }
+      .ppt-slide [class*="backdrop-blur"],
+      .ppt-slide [style*="backdrop-filter"] {
+        backdrop-filter: none !important;
+      }
+    }
+  </style>
+
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; }
+    .ppt-slide, .ppt-slide svg { font-family: var(--font-family); }
+    /* 可选全页背景图槽：仅当 image_map.json 为本页映射图片时启用（STRUCTURAL_IMAGE_PRESENT=true），
+       否则保持 display:none，对页面零影响 */
+    .ppt-slide > img[data-pptx-role="structural-background"] {
+      position: absolute;
+      inset: 0;
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+    .ppt-slide[data-pptx-image-present="true"] > img[data-pptx-role="structural-background"] {
+      display: block;
+    }
+    .ppt-slide > .structural-image-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      z-index: 1;
+      background: color-mix(in srgb, var(--color-text, #172033) 55%, transparent);
+    }
+    .ppt-slide[data-pptx-image-present="true"] > .structural-image-overlay {
+      display: block;
+    }
+    /* 内容承载层：仅保证内容压在背景图槽之上，不施加任何布局与样式 */
+    .ppt-slide > .slide-stage {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+    }
+    /* 结构页页脚默认为空且不显示；需要页码或来源时才由既有槽位承载。 */
+    .page-footer[hidden] { display: none; }
+    .page-footer-note { color: var(--color-muted, #667085); }
+    /* 页码槽位：页脚右侧的独立子元素，与来源文字并列；未要求页码时保持为空并整体隐藏 */
+    .page-footer-number { color: var(--color-muted, #667085); }
+    .page-footer-number:empty { display: none; }
+  </style>
+
+  <style id="theme-rules">
+    /* 全局样式规则槽：由 style-custom.md 的全局 CSS 规则块逐字填入（如标题、卡片、列表的共享样式）；
+       风格文件未提供时替换为空，页面样式由 slide-designer 在本页自由编写 */
+    .ppt-slide {
+  background-color: var(--color-bg);
+}
+.page-header {
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.page-main {
+  color: var(--color-text);
+  line-height: 1.7;
+}
+.page-footer {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+  </style>
+</head>
+
+<body>
+  <div class="ppt-slide" type="cover" data-pptx-image-policy="full-bleed-if-mapped" data-pptx-image-present="false">
+    <img data-pptx-role="structural-background" src="" alt="">
+    <div class="structural-image-overlay" aria-hidden="true"></div>
+    <div class="slide-stage">
+      <div class="w-full h-full flex flex-col justify-center px-[120px]">
+  <div class="border-l-[3px] border-[#2563EB] pl-[24px] mb-[40px]">
+    <p class="text-[16px] text-[#6B7280] tracking-[0.15em] mb-[16px]">课程设计开题报告</p>
+    <h1 class="text-[36px] font-bold text-[#2C3E50] leading-[1.35]">
+      基于 Web 的协同白板与实时音视频<br>及局域网快传系统
+    </h1>
+  </div>
+  <div class="border-t border-[#E5E7EB] pt-[28px] flex items-center gap-[48px]">
+    <div class="flex flex-col gap-[6px]">
+      <span class="text-[13px] text-[#6B7280]">汇报人</span>
+      <span class="text-[18px] text-[#1F2937]">本科生</span>
+    </div>
+    <div class="flex flex-col gap-[6px]">
+      <span class="text-[13px] text-[#6B7280]">指导教师</span>
+      <span class="text-[18px] text-[#1F2937]">指导教师</span>
+    </div>
+    <div class="flex flex-col gap-[6px]">
+      <span class="text-[13px] text-[#6B7280]">汇报日期</span>
+      <span class="text-[18px] text-[#1F2937]">2025 年 6 月</span>
+    </div>
+  </div>
+</div>
+    </div>
+    <footer class="page-footer absolute bottom-[30px] left-[30px] right-[30px] z-[3] flex items-end" data-pptx-footer="custom">
+      <p class="page-footer-note flex-1 min-w-0 text-[12px] leading-[1.5]"></p>
+      <span class="page-footer-number flex-shrink-0 text-[12px] leading-[1.5]" data-pptx-role="page-number"></span>
+    </footer>
+  </div>
+  <script>
+    // 按有效文字判断空页脚，兼容换行/缩进；hidden 属性会保留在导出的静态快照中。
+    document.querySelectorAll('.page-footer').forEach((footer) => {
+      footer.hidden = !footer.textContent.trim();
+    });
+  </script>
+</body>
+
+</html>

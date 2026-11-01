@@ -1,0 +1,310 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- 适用范围：content-template.html 仅用于内容页(content)；结构页(cover/agenda/section/ending)请勿套用，各自有对应模板，按 style.md「模板使用规则」字面拷贝。配色/字体以 style.md 为唯一权威。 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>PPT Slide</title>
+
+  <!-- Tailwind CSS（必选） -->
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/tailwind.js"></script>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/echarts.min.js"></script>
+
+  <!-- 字体引用 -->
+  <link href="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/css/fonts.css" rel="stylesheet" />
+
+  <!-- Tailwind 配置：科技极简风格配色（以 style.md 为唯一权威） -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nearBlack: "#1d1d1f",
+            techBlue: "#0071e3",
+            grayText: "rgba(0, 0, 0, 0.48)",
+          },
+          fontFamily: {
+            sans: ["NanxiXinyuanti", "Noto Sans SC", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- 防溢出硬性约束 → 全局 CSS 约束（逐字包含） -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 幻灯片容器 */
+      .ppt-slide {
+        @apply relative w-[1280px] h-[720px] mx-auto box-border overflow-hidden;
+      }
+
+      /* 全局防溢出约束 - 应用到所有子元素 */
+      .ppt-slide *,
+      .ppt-slide *::before,
+      .ppt-slide *::after {
+        @apply box-border;
+        max-width: 100%;
+      }
+
+      /* 图片/视频/图表防溢出 */
+      .ppt-slide img {
+        @apply max-w-full max-h-full;
+      }
+
+      .ppt-slide video,
+      .ppt-slide svg,
+      .ppt-slide .echarts-main,
+      .ppt-slide .chart-container,
+      .ppt-slide [id*="chart" i] {
+        @apply max-w-full max-h-full object-contain;
+      }
+
+      /* 图表容器高度防御 */
+      .ppt-slide [id*="chart" i],
+      .ppt-slide .chart-container,
+      .ppt-slide .echarts-main {
+        width: 100%;
+        height: 100%;
+        min-height: 160px;
+      }
+
+      /* 图表包装器高度防御 */
+      .ppt-slide :has(> [id*="chart" i]),
+      .ppt-slide :has(> .chart-container),
+      .ppt-slide :has(> .echarts-main) {
+        min-height: 160px;
+      }
+
+      /* 内容安全区：核心内容容器（边距由此统一提供） */
+      .content-safe {
+        @apply w-[1220px] h-[660px] my-[30px] mx-auto flex flex-col overflow-hidden;
+      }
+
+      /* 禁止模糊滤镜效果 */
+      .ppt-slide [class*="blur"],
+      .ppt-slide [style*="blur"] {
+        filter: none !important;
+        backdrop-filter: none !important;
+      }
+
+      /* 禁止半透明渐变背景，使用纯色替代 */
+      .ppt-slide [class*="gradient"] {
+        background-image: none !important;
+      }
+
+      /* 禁止毛玻璃效果 */
+      .ppt-slide [class*="backdrop-blur"],
+      .ppt-slide [style*="backdrop-filter"] {
+        backdrop-filter: none !important;
+      }
+
+      /* 全局字体设置：科技极简风格 */
+      .ppt-slide {
+        font-family: "NanxiXinyuanti", "Noto Sans SC", sans-serif !important;
+      }
+    }
+  </style>
+
+  <!-- 全局文字颜色 -->
+  <style>
+    body {
+      color: #1d1d1f;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ppt-slide flex flex-col bg-white" type="content">
+    <div class="content-safe">
+      <!-- 标题栏（跨页锚点片段：文字样式逐字复用，边距由 content-safe 统一提供） -->
+      <div class="pt-[40px] pb-[16px] flex-shrink-0">
+        <h1 class="text-[35px] font-semibold text-nearBlack leading-[1.07] tracking-[-0.28px]">
+          工具割裂→单页面集成：三面板同界面联动消除上下文断裂
+        </h1>
+        <div class="w-[40px] h-[1px] bg-nearBlack mt-[12px]"></div>
+      </div>
+
+      <!-- 主视觉区：弹性填充 -->
+      <main class="flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
+        
+        <div class="w-full flex-1 min-h-0 flex flex-col gap-[14px]">
+          <!-- 对比表 -->
+          <div class="flex-shrink-0" data-block="comparison">
+            <table class="w-full border-collapse text-[13px]" style="font-family: NanxiXinyuanti, 'Noto Sans SC', sans-serif;">
+              <thead>
+                <tr>
+                  <th class="text-left py-[7px] px-[10px] bg-[#f5f5f7] text-nearBlack font-semibold tracking-[-0.12px] rounded-tl-[5px]" style="width:16%;">对比维度</th>
+                  <th class="text-left py-[7px] px-[10px] bg-[#f5f5f7] text-nearBlack font-semibold tracking-[-0.12px]" style="width:42%;">碎片化工具现状</th>
+                  <th class="text-left py-[7px] px-[10px] bg-[#0071e3] text-white font-semibold tracking-[-0.12px] rounded-tr-[5px]" style="width:42%;">单页面集成方案</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px] border-b border-[#f5f5f7]">白板工具</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] border-b border-[#f5f5f7]">Miro 独立运行</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack tracking-[-0.12px] border-b border-[#f5f5f7]">同界面白板面板</td>
+                </tr>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px] border-b border-[#f5f5f7]">语音工具</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] border-b border-[#f5f5f7]">腾讯会议 / Discord</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack tracking-[-0.12px] border-b border-[#f5f5f7]">同界面语音面板</td>
+                </tr>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px] border-b border-[#f5f5f7]">文件传输</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] border-b border-[#f5f5f7]">微盘 / 微信分发</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack tracking-[-0.12px] border-b border-[#f5f5f7]">同界面文件面板</td>
+                </tr>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px] border-b border-[#f5f5f7]">切换次数</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] border-b border-[#f5f5f7]">3 工具间频繁切换</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-semibold tracking-[-0.12px] border-b border-[#f5f5f7]">0 次跨工具切换</td>
+                </tr>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px] border-b border-[#f5f5f7]">上下文状态</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] border-b border-[#f5f5f7]">讨论思路被打断</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack tracking-[-0.12px] border-b border-[#f5f5f7]">语音光标实时联动</td>
+                </tr>
+                <tr>
+                  <td class="py-[6px] px-[10px] text-nearBlack font-medium tracking-[-0.12px]">信息流转</td>
+                  <td class="py-[6px] px-[10px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px]">语音白板信息孤岛</td>
+                  <td class="py-[6px] px-[10px] text-nearBlack tracking-[-0.12px]">聊天文件自动同步</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 指标卡组 -->
+          <div class="flex-shrink-0 grid grid-cols-4 gap-[12px]" data-block="metric">
+            <div class="bg-[#f5f5f7] rounded-[6px] px-[12px] py-[10px]">
+              <div class="text-[28px] font-semibold text-nearBlack leading-[1.07] tracking-[-0.28px]">3</div>
+              <div class="text-[12px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] mt-[2px]">碎片化工具数量（种）</div>
+            </div>
+            <div class="bg-[#f5f5f7] rounded-[6px] px-[12px] py-[10px]">
+              <div class="text-[28px] font-semibold text-nearBlack leading-[1.07] tracking-[-0.28px]">3</div>
+              <div class="text-[12px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] mt-[2px]">集成面板数（个）</div>
+            </div>
+            <div class="bg-[#0071e3] rounded-[6px] px-[12px] py-[10px]">
+              <div class="text-[28px] font-semibold text-white leading-[1.07] tracking-[-0.28px]">0</div>
+              <div class="text-[12px] text-white tracking-[-0.12px] mt-[2px]">跨工具切换（次/会话）</div>
+            </div>
+            <div class="bg-[#f5f5f7] rounded-[6px] px-[12px] py-[10px]">
+              <div class="text-[28px] font-semibold text-nearBlack leading-[1.07] tracking-[-0.28px]">1</div>
+              <div class="text-[12px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] mt-[2px]">聊天文件同步链路（条）</div>
+            </div>
+          </div>
+
+          <!-- 联动机制 + 案例 -->
+          <div class="flex-1 min-h-0 grid grid-cols-2 gap-[16px]" data-block="support">
+            <div class="bg-[#f5f5f7] rounded-[6px] px-[14px] py-[10px] flex flex-col">
+              <div class="text-[14px] font-semibold text-nearBlack tracking-[-0.224px] flex-shrink-0">集成方案联动机制</div>
+              <ul class="mt-[6px] space-y-[4px] text-[12px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] leading-[1.4]">
+                <li>• 语音状态与白板光标实时联动：谁在说话，其光标旁显示声波闪烁动画</li>
+                <li>• 聊天室发送文件自动同步至白板文件面板，1 条联动链路</li>
+                <li>• 文件直接拖拽到白板区域，图片自动生成预览并钉在白板上</li>
+                <li>• 一键将白板内容与聊天记录打包生成 PDF/图片，分发给组员</li>
+              </ul>
+            </div>
+            <div class="bg-[#f5f5f7] rounded-[6px] px-[14px] py-[10px] flex flex-col">
+              <div class="text-[14px] font-semibold text-nearBlack tracking-[-0.224px] flex-shrink-0">典型应用场景</div>
+              <ul class="mt-[6px] space-y-[4px] text-[12px] text-[rgba(0,0,0,0.8)] tracking-[-0.12px] leading-[1.4]">
+                <li>• 远程代码评审：3 工具切换变 0 切换，白板标注与语音讨论同界面进行</li>
+                <li>• 线上科研讨论：语音中提及内容直接拖拽文件至白板生成预览，消除信息孤岛</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      
+      </main>
+
+      <!-- 页脚/注释区（跨页锚点片段：文字样式逐字复用） -->
+      <div class="pt-[8px] pb-[16px] flex-shrink-0">
+        <p class="text-[14px] text-grayText">
+          数据来源：《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲（修订版）用户文档 ｜ 统计口径：碎片化工具=白板+语音+文件传输三类独立工具，集成后切换次数按单会话内跨工具切换行为计数
+        </p>
+      </div>
+    </div>
+  </div>
+    <!-- CHART_SCAFFOLD_BEGIN
+    <script data-pptx-chart-scaffold="v1">
+      /*
+       * 图表骨架（图表候选页激活；非图表页保持注释即可，对浏览器与 fix 零副作用）。
+       * 重要：说明文字必须写在本 script 内的 JS 块注释中，禁止写在 HTML 注释定界符与
+       * script 之间（否则激活后会成为页面可见裸文本）。
+       *
+       * 激活步骤：
+       *   1) 图表块先从 PAGE_CONTENT 的 Grid/Flex 区域获得确定高度；纵向 Flex 槽示例：
+       *        div.flex-1.min-h-0.flex.flex-col > div.flex-1.min-h-0 > div#chart-1.w-full.h-full
+       *      Grid 单元由行轨道分配高度；块内标题/说明用 flex-shrink-0，绘图包装器消费剩余高度。
+       *      h-full 的直接父容器必须有可解析高度；中间不能只靠内容撑高，min-height 兜底不能代替高度链。
+       *   2) 把下方 const option = null 的 null 替换为真实图表 option（series/data/xAxis/yAxis 等）。
+       *   3) 保存页面后运行 activate-template-chart，由命令成对移除外层注释；不得手工删除定界符。
+       *      完整命令见 references/designer/charts.md 或本页任务；填好数据不等于已激活。
+       *
+       * 骨架已内置硬约束（机制勿改）：SVG renderer · animation:false 强制 · 全局 textStyle.fontFamily · IIFE · formatter 外部函数。
+       * CHART_FONT_FAMILY 必须等于当前风格 style.md（custom 为 style-custom.md）frontmatter 的完整字体栈：
+       *   预设风格模板已预置正确值（勿改）；custom 模板为中性占位值，必须替换后再激活。
+       * 仍需 designer 自觉遵守（骨架不强制）：
+       *   - 禁止渐变（colorStops、type 为 linear 或 radial、echarts.graphic.LinearGradient 等会触发导出位图化）；
+       *     折线/面积图 areaStyle.color 用半透明纯色，如 rgba(<风格主色>, 0.18)，色值以 style.md 为准。
+       *   - 坐标轴/图例/数据标签的 fontFamily/color 按 style.md 图表色规范设置。
+       * 设计约束：外层 HTML 注释（BEGIN 与 END 之间）任何位置都不得出现 HTML 注释结束符
+       * 或连续减号，否则会提前终止外层注释、让非图表页误执行图表代码。
+       * 多图表：每段独立成 HTML 注释块（CHART_SCAFFOLD_BEGIN 与 CHART_SCAFFOLD_2_BEGIN ），并把第二段标签改为 _2_ 以便区分；切勿把第二段粘贴到第一段注释内部，否则外层注释会在内层第一个 HTML标签注释结束符（减号减号大于号）处提前闭合。改 id（chart-1 改 chart-2）与 getElementById 入参。
+       */
+      (function () {
+        const CHART_FONT_FAMILY = "NanxiXinyuanti, Noto Sans SC, sans-serif";
+        // formatter 外部函数模板：
+        //   axisLabel / xAxis / yAxis 的 formatter 接收原始数值；
+        //   series.label / tooltip 的 formatter 接收 params 对象（需取 .value）。
+        function formatAxisNumber(v) {
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatAxisPercent(v) {
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatAxisPercentAsIs(v) {
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        function formatLabelNumber(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatLabelPercent(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatLabelPercentAsIs(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        const el = document.getElementById("chart-1");
+        if (!el) return;
+        // 激活后把下方 null 替换为图表 option 对象，例如：
+        //   { xAxis:{type:"category",data:[...]}, yAxis:{type:"value"}, series:[{data:[...],type:"bar"}] }
+        // 注意：option 校验必须在 echarts.init 之前，否则未替换 null 时仍会创建实例并产出空 SVG，
+        // 进而被 convert 阶段渲染为空图（fix 已不再落盘 ECharts，由 convert 阶段现场渲染）。
+        const option = null;
+        if (!option) return; // 未填 option 则跳过，避免执行 echarts.init 产出空图
+        const chart = echarts.init(el, null, { renderer: "svg" });
+        option.animation = false; // 强制禁动画，PPT 静态输出必须禁用，不可覆盖
+        option.textStyle = Object.assign({ fontFamily: CHART_FONT_FAMILY }, option.textStyle);
+        chart.setOption(option);
+      })();
+    </script>
+    CHART_SCAFFOLD_END -->
+</body>
+
+</html>

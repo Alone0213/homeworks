@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>协同白板 + 语音 + 快传 · UI Demo</title>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#131820; --line:#242c39; --line2:#2a3342;
+  --text:#e6eaf2; --muted:#8b97ab; --accent:#5b8cff; --accent2:#22c55e; --danger:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:var(--bg);color:var(--text);
+  font:14px/1.45 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+svg{display:block}
+
+/* ---------- 骨架 ---------- */
+.app{height:100vh;display:grid;grid-template-columns:264px 1fr;grid-template-rows:56px 1fr;
+  grid-template-areas:"top top" "voice board";transition:grid-template-columns .22s ease}
+.app.collapsed{grid-template-columns:64px 1fr}
+
+/* ---------- 顶栏 ---------- */
+.topbar{grid-area:top;display:flex;align-items:center;gap:14px;padding:0 14px;z-index:20;
+  background:linear-gradient(180deg,#161c26,#111721);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:32px;height:32px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,#5b8cff,#8b5cf6);box-shadow:0 6px 16px rgba(91,140,255,.35)}
+.brand-text{min-width:0}
+.brand-text b{display:block;font-size:13.5px;letter-spacing:.01em}
+.brand-text span{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:flex;align-items:center;gap:8px;margin-left:auto;overflow:hidden}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;flex:none;
+  background:#1a2130;border:1px solid var(--line);color:var(--muted);font-size:12px;white-space:nowrap}
+.pill b{color:var(--text);font-weight:600}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.actions{display:flex;gap:8px;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--line2);background:#1d2431;color:var(--text);
+  font-size:12.5px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:.15s}
+.btn:hover{background:#232c3c}
+.btn.primary{background:linear-gradient(135deg,#5b8cff,#7c6cff);border-color:transparent;box-shadow:0 6px 18px rgba(91,140,255,.3)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{background:#2a1a1e;border-color:#4a2530;color:#ffb4c0}
+
+/* ---------- 语音栏（左侧，可折叠） ---------- */
+.voice{grid-area:voice;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.voice-head{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 8px 0 14px;border-bottom:1px solid var(--line)}
+.voice-title{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden}
+.voice-title b{color:var(--text);font-weight:600}
+.icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid transparent;background:transparent;
+  color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s}
+.icon-btn:hover{background:#232c3c;color:var(--text)}
+.voice-body{flex:1;min-height:0;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:2px}
+.peer{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:12px;transition:background .15s}
+.peer:hover{background:#1a2130}
+.peer.speaking{background:linear-gradient(90deg,rgba(34,197,94,.16),rgba(34,197,94,0))}
+.avatar{width:34px;height:34px;border-radius:11px;flex:none;display:grid;place-items:center;
+  font-size:13px;font-weight:700;color:#0b0e13;position:relative;transition:box-shadow .15s}
+.peer.speaking .avatar{box-shadow:0 0 0 2px var(--accent2),0 0 0 6px rgba(34,197,94,.16)}
+.peer-info{min-width:0;flex:1}
+.peer-name{font-size:13px;display:flex;align-items:center;gap:6px}
+.peer-name span.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{font-size:10px;color:var(--muted);border:1px solid var(--line2);border-radius:6px;padding:0 5px;line-height:15px;flex:none}
+.peer-sub{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{display:flex;align-items:flex-end;gap:2px;height:16px;flex:none;opacity:.3;transition:opacity .2s}
+.peer.speaking .meter{opacity:1}
+.meter i{width:3px;height:40%;border-radius:2px;background:var(--accent2);transform-origin:bottom}
+.meter i:nth-child(2){height:70%}
+.meter i:nth-child(3){height:50%}
+.meter i:nth-child(4){height:85%}
+.peer.speaking .meter i{animation:eq .58s ease-in-out infinite alternate}
+.peer.speaking .meter i:nth-child(2){animation-delay:.1s}
+.peer.speaking .meter i:nth-child(3){animation-delay:.2s}
+.peer.speaking .meter i:nth-child(4){animation-delay:.3s}
+@keyframes eq{from{transform:scaleY(.32)}to{transform:scaleY(1.15)}}
+.mic-off{color:#ff9aa8;display:inline-flex;flex:none}
+.voice-foot{flex:none;display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:#111721}
+.ctl{flex:1;height:34px;border-radius:10px;border:1px solid var(--line2);background:#1d2431;color:var(--text);
+  display:grid;place-items:center;cursor:pointer;font-size:12.5px;transition:.15s}
+.ctl:hover{background:#232c3c}
+.ctl.off{background:#2a1a1e;border-color:#4a2530;color:#ffb4c0}
+.ctl.hang{flex:1.1;background:#2a1a1e;border-color:#4a2530;color:#ffb4c0}
+.voice-rail{display:none;flex:1;min-height:0;overflow:auto;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+.app.collapsed .voice-body,.app.collapsed .voice-foot,.app.collapsed .voice-title{display:none}
+.app.collapsed .voice-rail{display:flex}
+.app.collapsed .voice-head{justify-content:center;padding:0}
+/* ---------- 白板区 ---------- */
+.board{grid-area:board;position:relative;min-width:0;min-height:0;background:#f7f8fc;overflow:hidden}
+#board{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+#board.tool-pan{cursor:grab}
+#board.tool-text{cursor:text}
+.hint{position:absolute;left:14px;top:14px;z-index:5;display:flex;align-items:center;gap:9px;
+  background:rgba(19,24,32,.93);color:#cfd8e6;border:1px solid var(--line2);border-radius:12px;
+  padding:7px 11px;font-size:12px;box-shadow:0 10px 24px rgba(8,12,20,.22);transition:opacity .4s,transform .4s}
+.hint.hide{opacity:0;transform:translateY(-6px);pointer-events:none}
+.hint svg{color:var(--accent)}
+.remote-cursor{position:absolute;left:0;top:0;z-index:6;pointer-events:none;color:#f97316;
+  transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.remote-cursor .tag{display:inline-block;margin:12px 0 0 12px;background:#f97316;color:#161c26;font-size:11px;
+  font-weight:700;border-radius:7px;padding:1px 6px;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.drop-hint{position:absolute;inset:10px;z-index:9;border:2px dashed rgba(91,140,255,.8);border-radius:18px;
+  background:rgba(91,140,255,.09);display:none;place-items:center;color:#2b4a8f;font-size:15px;font-weight:600}
+.drop-hint.show{display:grid}
+
+/* ---------- 底部绘图工具栏 ---------- */
+.toolbar{position:absolute;left:0;right:0;bottom:16px;margin:0 auto;width:max-content;z-index:7;display:flex;align-items:center;
+  gap:4px;padding:7px 8px;border-radius:16px;background:rgba(19,24,32,.96);border:1px solid var(--line2);
+  box-shadow:0 14px 34px rgba(8,12,20,.3);backdrop-filter:blur(10px);max-width:calc(100% - 28px);
+  flex-wrap:wrap;justify-content:center}
+.tbtn{width:34px;height:34px;border-radius:10px;border:1px solid transparent;background:transparent;color:#c7d2e2;
+  display:grid;place-items:center;cursor:pointer;transition:.15s}
+.tbtn:hover{background:#242e3e;color:#fff}
+.tbtn.active{background:linear-gradient(135deg,#5b8cff,#7c6cff);color:#fff;box-shadow:0 6px 14px rgba(91,140,255,.35)}
+.tbtn[disabled]{opacity:.32;cursor:not-allowed;background:transparent;box-shadow:none}
+.sep{width:1px;height:22px;background:var(--line2);margin:0 5px;flex:none}
+.swatches{display:flex;align-items:center;gap:6px;padding:0 4px}
+.swatch{width:19px;height:19px;border-radius:50%;border:2px solid #38445a;cursor:pointer;transition:.15s}
+.swatch:hover{transform:scale(1.12)}
+.swatch.active{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.range-wrap{display:flex;align-items:center;gap:7px;padding:0 6px;color:#9fb0c6;font-size:11px}
+input[type=range]{width:74px;accent-color:var(--accent)}
+.zoombar{position:absolute;right:16px;bottom:16px;z-index:7;display:flex;align-items:center;gap:2px;padding:5px;
+  background:rgba(19,24,32,.96);border:1px solid var(--line2);border-radius:12px;box-shadow:0 12px 28px rgba(8,12,20,.28)}
+.zoombar .tbtn{width:28px;height:28px}
+.zlabel{min-width:48px;text-align:center;font-size:12px;color:#cfd8e6;font-variant-numeric:tabular-nums}
+
+/* ---------- 文字聊天小窗 ---------- */
+.chat{position:absolute;right:16px;bottom:118px;z-index:8;width:322px;max-width:calc(100% - 32px);
+  background:var(--panel);border:1px solid var(--line2);border-radius:16px;overflow:hidden;display:flex;
+  flex-direction:column;box-shadow:0 18px 44px rgba(8,12,20,.34);transition:width .2s}
+.chat.min{width:224px}
+.chat.min .chat-body,.chat.min .chat-input,.chat.min .chat-typing{display:none}
+.chat-head{height:42px;flex:none;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;
+  background:#1a2130;border-bottom:1px solid var(--line)}
+.chat-head .title{flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+  white-space:nowrap;overflow:hidden}
+.chat-head .title svg{color:var(--accent)}
+.chat-body{height:230px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#131820}
+.msg{max-width:84%;padding:7px 10px;border-radius:12px;font-size:12.5px;align-self:flex-start;word-break:break-word;
+  background:#1e2533;border:1px solid #26303f}
+.msg .who{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,#3f6fe0,#5b8cff);border-color:transparent;color:#fff}
+.msg.me .who{color:rgba(255,255,255,.82);text-align:right}
+.msg.sys{align-self:center;background:transparent;border:0;color:var(--muted);font-size:11px;padding:0}
+.chat-typing{flex:none;height:18px;padding:0 12px;font-size:11px;color:var(--muted);background:#131820}
+.chat-input{flex:none;display:flex;gap:6px;padding:8px;background:#111721;border-top:1px solid var(--line)}
+.chat-input input{flex:1;height:32px;border-radius:9px;border:1px solid var(--line2);background:#0e131c;
+  color:var(--text);padding:0 10px;font-size:12.5px;outline:none}
+.chat-input input:focus{border-color:var(--accent)}
+.chat-input button{width:36px;height:32px;border-radius:9px;border:0;color:#fff;cursor:pointer;display:grid;place-items:center;
+  background:linear-gradient(135deg,#5b8cff,#7c6cff)}
+.badge{min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;
+  font-size:10.5px;font-weight:700;display:grid;place-items:center}
+
+/* ---------- 浮层 ---------- */
+.toasts{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;
+  gap:8px;align-items:center;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;padding:8px 13px;border-radius:12px;background:#1a2130;
+  border:1px solid var(--line2);color:var(--text);font-size:12.5px;box-shadow:0 14px 34px rgba(0,0,0,.34);animation:drop .22s ease}
+.toast svg{color:var(--accent2);flex:none}
+@keyframes drop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.progress{width:150px;height:6px;border-radius:99px;background:#2c3646;overflow:hidden;flex:none}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b8cff,#22c55e);transition:width .18s linear}
+.text-input{position:absolute;z-index:10;display:none;min-width:96px;padding:1px 5px;border:1px dashed var(--accent);
+  border-radius:6px;background:#fff;color:#111827;font-size:20px;font-family:inherit;outline:none}
+
+@media (max-width:1280px){ .zoombar{top:14px;bottom:auto} }
+@media (max-width:760px){
+  .app{grid-template-columns:64px 1fr}
+  .app .voice-body,.app .voice-foot,.app .voice-title{display:none}
+  .app .voice-rail{display:flex}
+  .app .voice-head{justify-content:center;padding:0}
+  .brand-text span{display:none}
+  .chat{right:12px;bottom:112px;width:252px}
+  .chat-body{height:170px}
+  .toolbar{bottom:12px;gap:2px;padding:6px;border-radius:14px}
+  .zoombar{display:none}
+}
+</style>
+</head><body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 20h20"/><path d="M8.5 10.5l2.5 2 4-4"/></svg>
+      </div>
+      <div class="brand-text">
+        <b>局域网协作房间 · 答辩演示</b>
+        <span>纯浏览器客户端 + 自托管节点 · 白板 / 语音 / 文件快传</span>
+      </div>
+    </div>
+    <div class="status">
+      <span class="pill" title="信令与房间状态"><span class="dot"></span>已连接</span>
+      <span class="pill opt" title="往返时延（模拟）">RTT <b id="rtt">12</b> ms</span>
+      <span class="pill opt" title="ICE 选中的候选对类型">直连 <b id="netPath">host</b></span>
+      <span class="pill opt" id="peerCount">4 人在线</span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnShare" title="共享屏幕（演示）">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16.5V20"/></svg>
+        共享屏幕
+      </button>
+      <button class="btn" id="btnInvite" title="邀请成员（演示）">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 20a6 6 0 0 1 12 0"/><path d="M18.5 7.5v6"/><path d="M15.5 10.5h6"/></svg>
+        邀请
+      </button>
+      <button class="btn primary" id="btnPresent">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h14v11H5z"/><path d="M12 15.5V20"/><path d="m9 20h6"/><path d="M9.5 10.5l2 2 3.5-4"/></svg>
+        演示模式
+      </button>
+    </div>
+  </header>
+
+  <aside class="voice" id="voicePane">
+    <div class="voice-head">
+      <span class="voice-title" id="voiceTitle">语音 · <b>4/6</b></span>
+      <button class="icon-btn" id="btnCollapse" title="折叠 / 展开语音栏">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round"><path d="m13 7-5 5 5 5"/><path d="m17.5 7 3 5-3 5"/></svg>
+      </button>
+    </div>
+    <div class="voice-body" id="voiceList"></div>
+    <div class="voice-rail" id="voiceRail"></div>
+    <div class="voice-foot">
+      <button class="ctl" id="btnMic" title="麦克风开关">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/><path d="M9 21h6"/></svg>
+      </button>
+      <button class="ctl" id="btnCam" title="摄像头开关（本期可选）">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="12.5" height="11" rx="2"/><path d="m15.5 11 5-3v8l-5-3z"/></svg>
+      </button>
+      <button class="ctl hang" id="btnHang" title="离开房间">挂断</button>
+    </div>
+  </aside>
+
+  <main class="board" id="boardWrap">
+    <canvas id="board"></canvas>
+
+    <div class="hint" id="hint">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 21h14"/></svg>
+      <span>提示：拖一个文件到白板上，可体验局域网快传（模拟）</span>
+    </div>
+
+    <div class="remote-cursor" id="remoteCursor">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="rgba(0,0,0,.35)" stroke-width="1">
+        <path d="M5 3.5 19 11l-6.3 1.6L10 19Z"/></svg>
+      <span class="tag" id="remoteTag">林欣</span>
+    </div>
+
+    <div class="drop-hint">松手即可通过局域网直传该文件</div>
+
+    <div class="toolbar" id="toolbar"></div>
+
+    <div class="zoombar">
+      <button class="tbtn" id="btnZoomOut" title="缩小">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round"><path d="M5 12h14"/></svg>
+      </button>
+      <span class="zlabel" id="zoomLabel">100%</span>
+      <button class="tbtn" id="btnZoomIn" title="放大">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </button>
+      <button class="tbtn" id="btnZoomFit" title="复位视图">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5"/><path d="M20 15v5h-5"/><path d="M15 4h5v5"/><path d="M9 20H4v-5"/></svg>
+      </button>
+    </div>
+
+    <section class="chat" id="chat">
+      <div class="chat-head">
+        <span class="title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H8.5L4 20.5z"/></svg>
+          文字聊天
+          <span class="badge" id="chatBadge" style="display:none">1</span>
+        </span>
+        <button class="icon-btn" id="btnChatMin" title="收起 / 展开">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="chat-body" id="chatBody"></div>
+      <div class="chat-typing" id="chatTyping"></div>
+      <div class="chat-input">
+        <input id="chatInput" type="text" placeholder="说点什么…（Enter 发送）" maxlength="200" />
+        <button id="btnChatSend" title="发送">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-7 16-2.4-6.2Z"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <input class="text-input" id="textInput" />
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div><script>
+/* ==================== 基础工具 ==================== */
+const $ = (id) => document.getElementById(id);
+
+const ICONS = {
+  pen:'<path d="M12 20h9"/><path d="M16.5 3.9a2.1 2.1 0 0 1 3 3L7.6 18.8 3.5 20l1.2-4.1Z"/>',
+  hl:'<path d="M9 14.5 3.8 19.7 4.6 21h3.4l5-5"/><path d="M13.2 12.8 19.4 6.6a2 2 0 0 0-2.8-2.8L10.4 10Z"/>',
+  eraser:'<path d="M7 21h13"/><path d="M16.4 3.9a2 2 0 0 1 2.8 2.8l-8.6 8.6-4.2 1.2 1.2-4.2Z"/>',
+  line:'<path d="M4 20 20 4"/>',
+  arrow:'<path d="M4 20 20 4"/><path d="M13.5 4H20v6.5"/>',
+  rect:'<rect x="4" y="6" width="16" height="12" rx="1.5"/>',
+  ellipse:'<circle cx="12" cy="12" r="7.2"/>',
+  text:'<path d="M5 5h14"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+  pan:'<path d="M9 11.5V5.6a1.5 1.5 0 0 1 3 0v5.9"/><path d="M12 11V9.4a1.5 1.5 0 0 1 3 0V12"/><path d="M15 12.4a1.5 1.5 0 0 1 3 0V16a5 5 0 0 1-5 5h-1.2A5 5 0 0 1 7 16v-2.6l-1.4 1.4"/>',
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/>',
+  redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v3"/>',
+  trash:'<path d="M4 7h16"/><path d="M9 7V4.8h6V7"/><path d="m6.5 7 1 13h9l1-13"/>',
+  save:'<path d="M12 3v12"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 21h14"/>',
+  mic:'<path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/><path d="M9 21h6"/>',
+  micOff:'<path d="M12 3a3 3 0 0 1 3 3v3.5"/><path d="M15 12.6a3 3 0 0 1-6 0"/><path d="M6 11a6 6 0 0 0 9.4 5"/><path d="M12 17v4"/><path d="M3 3l18 18"/>',
+  cam:'<rect x="3" y="6.5" width="12.5" height="11" rx="2"/><path d="m15.5 11 5-3v8l-5-3z"/>',
+  check:'<path d="m5 13 4 4 10-10"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/>',
+  wave:'<path d="M4 12h2l2-5 3 10 3-8 2 3h4"/>'
+};
+
+function icon(name, size){
+  size = size || 18;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
+}
+
+function toast(html, ms, ic){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = icon(ic || 'check', 15) + '<span>' + html + '</span>';
+  $('toasts').appendChild(el);
+  setTimeout(function(){
+    el.style.transition = 'opacity .3s';
+    el.style.opacity = '0';
+    setTimeout(function(){ el.remove(); }, 320);
+  }, ms || 2300);
+  return el;
+}
+
+function nowTime(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+/* ==================== 左侧语音栏（可折叠） ==================== */
+const PEERS = [
+  { id:'me', name:'我（本机）', short:'我', color:'#5b8cff', muted:false, speaking:false, self:true },
+  { id:'p1', name:'林欣', short:'林', color:'#f97316', muted:false, speaking:false },
+  { id:'p2', name:'陈航', short:'陈', color:'#22c55e', muted:true, speaking:false },
+  { id:'p3', name:'Zoe', short:'Z', color:'#a855f7', muted:false, speaking:false }
+];
+
+function renderVoice(){
+  $('voiceList').innerHTML = PEERS.map(function(p){
+    const sub = p.self ? '本机麦克风 · 已连接' : (p.muted ? '已静音' : '语音已连接 · 直连');
+    const micSvg = p.muted ? '<span class="mic-off">' + icon('micOff', 14) + '</span>' : '';
+    return '<div class="peer' + (p.speaking ? ' speaking' : '') + '" data-peer="' + p.id + '">'
+      + '<div class="avatar" style="background:' + p.color + '">' + p.short + '</div>'
+      + '<div class="peer-info">'
+      +   '<div class="peer-name"><span class="nm">' + p.name + '</span>'
+      +     (p.self ? '<span class="chip">本机</span>' : '') + micSvg + '</div>'
+      +   '<div class="peer-sub">' + sub + '</div>'
+      + '</div>'
+      + '<div class="meter"><i></i><i></i><i></i><i></i></div>'
+      + '</div>';
+  }).join('');
+
+  $('voiceRail').innerHTML = PEERS.map(function(p){
+    return '<div class="avatar" title="' + p.name + '" style="background:' + p.color + ';'
+      + (p.muted ? 'opacity:.45;' : '') + (p.self ? 'box-shadow:0 0 0 2px #5b8cff;' : '')
+      + '">' + p.short + '</div>';
+  }).join('');
+
+  $('voiceTitle').innerHTML = '语音 · <b>' + PEERS.length + '/6</b>';
+  $('peerCount').textContent = PEERS.length + ' 人在线';
+}
+
+function setSpeaking(id, on){
+  const p = PEERS.find(function(x){ return x.id === id; });
+  if (!p) return;
+  p.speaking = on;
+  const el = document.querySelector('[data-peer="' + id + '"]');
+  if (el) el.classList.toggle('speaking', on);
+}
+
+function voiceTicker(){
+  const cands = PEERS.filter(function(p){ return !p.muted; });
+  if (!cands.length) return;
+  const p = cands[Math.floor(Math.random() * cands.length)];
+  setSpeaking(p.id, true);
+  setTimeout(function(){ setSpeaking(p.id, false); }, 900 + Math.random() * 1500);
+}
+
+/* ==================== 文字聊天小窗 ==================== */
+const CHAT = [
+  { who:'林欣', self:false, text:'协议分层那页我画在白板右上角了，你看下顺序对不对', time:'14:02' },
+  { who:'陈航', self:false, text:'收到，我这边正在跑 3 人语音的丢包对照，等会儿把结果贴上来', time:'14:03' },
+  { sys:true, text:'Zoe 已通过局域网直连加入房间（host candidate）' }
+];
+
+const REPLIES = [
+  '好的，我这边同步一下白板',
+  '这个结论和你的实验数据对得上吗？',
+  '我先把这一页的图补上，稍等',
+  '那我先静音，避免回声影响测量',
+  '要不要把对照组也画到白板上'
+];
+
+let unread = 0;
+
+function renderChat(){
+  $('chatBody').innerHTML = CHAT.map(function(m){
+    if (m.sys) return '<div class="msg sys">' + m.text + '</div>';
+    return '<div class="msg' + (m.self ? ' me' : '') + '">'
+      + '<span class="who">' + (m.self ? '我' : m.who) + (m.time ? ' · ' + m.time : '') + '</span>'
+      + m.text + '</div>';
+  }).join('');
+  const body = $('chatBody');
+  body.scrollTop = body.scrollHeight;
+}
+
+function chatSend(){
+  const inp = $('chatInput');
+  const v = inp.value.trim();
+  if (!v) return;
+  CHAT.push({ who:'我', self:true, text:v, time:nowTime() });
+  inp.value = '';
+  renderChat();
+  $('chatTyping').textContent = '林欣 正在输入…';
+  setTimeout(function(){
+    $('chatTyping').textContent = '';
+    const who = Math.random() > 0.5 ? '林欣' : '陈航';
+    CHAT.push({ who:who, self:false, text:REPLIES[Math.floor(Math.random() * REPLIES.length)], time:nowTime() });
+    renderChat();
+    if ($('chat').classList.contains('min')){
+      unread++;
+      const b = $('chatBadge');
+      b.style.display = 'grid';
+      b.textContent = unread;
+    }
+  }, 1200 + Math.random() * 1400);
+}
+
+/* ==================== 底部绘图工具栏 ==================== */
+const TOOLS = [
+  { id:'pen', icon:'pen', label:'画笔 (P)' },
+  { id:'highlighter', icon:'hl', label:'荧光笔 (H)' },
+  { id:'eraser', icon:'eraser', label:'橡皮 (E)' },
+  { id:'line', icon:'line', label:'直线 (L)' },
+  { id:'arrow', icon:'arrow', label:'箭头 (A)' },
+  { id:'rect', icon:'rect', label:'矩形 (R)' },
+  { id:'ellipse', icon:'ellipse', label:'椭圆 (O)' },
+  { id:'text', icon:'text', label:'文字 (T)' },
+  { id:'pan', icon:'pan', label:'平移视图（按住空格拖动）' }
+];
+
+const COLORS = ['#1f2937', '#5b8cff', '#ef4444', '#22c55e', '#f59e0b', '#a855f7'];
+
+function renderToolbar(){
+  let html = TOOLS.map(function(t){
+    return '<button class="tbtn" data-tool="' + t.id + '" title="' + t.label + '">' + icon(t.icon, 19) + '</button>';
+  }).join('');
+  html += '<span class="sep"></span><span class="swatches">'
+    + COLORS.map(function(c){
+        return '<span class="swatch" data-color="' + c + '" style="background:' + c + '" title="' + c + '"></span>';
+      }).join('')
+    + '</span><span class="sep"></span>'
+    + '<span class="range-wrap"><input type="range" id="widthRange" min="2" max="18" step="1" value="4" title="笔宽" /></span>'
+    + '<span class="sep"></span>'
+    + '<button class="tbtn" id="btnUndo" title="撤销 (Ctrl+Z)">' + icon('undo', 19) + '</button>'
+    + '<button class="tbtn" id="btnRedo" title="重做 (Ctrl+Y)">' + icon('redo', 19) + '</button>'
+    + '<button class="tbtn" id="btnClear" title="清空白板">' + icon('trash', 19) + '</button>'
+    + '<button class="tbtn" id="btnExport" title="导出 PNG">' + icon('save', 19) + '</button>';
+  $('toolbar').innerHTML = html;
+}
+</script><script>
+/* ==================== 白板引擎 ==================== */
+const canvas = $('board');
+const ctx = canvas.getContext('2d');
+
+const view = { s:1, x:0, y:0 };
+let DPR = 1, W = 0, H = 0;
+let shapes = [];
+let cur = null;
+let tool = 'pen';
+const paint = { color:'#1f2937', width:4 };
+let history = [[]], hp = 0;
+let panning = null, erasing = false, erased = false, spaceDown = false;
+const HL_COLOR = '#f59e0b';
+
+function clone(v){ return JSON.parse(JSON.stringify(v)); }
+
+function resize(){
+  const r = $('boardWrap').getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.max(1, Math.round(r.width));
+  H = Math.max(1, Math.round(r.height));
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  draw();
+}
+
+function toWorld(sx, sy){ return { x:(sx - view.x) / view.s, y:(sy - view.y) / view.s }; }
+
+function applyView(c){ c.setTransform(DPR * view.s, 0, 0, DPR * view.s, DPR * view.x, DPR * view.y); }
+
+function drawGrid(){
+  let step = 32;
+  while (((W / view.s) / step) * ((H / view.s) / step) > 4200) step *= 2;
+  const x0 = Math.floor((0 - view.x) / view.s / step) * step;
+  const y0 = Math.floor((0 - view.y) / view.s / step) * step;
+  const x1 = (W - view.x) / view.s;
+  const y1 = (H - view.y) / view.s;
+  const r = 1.6 / view.s;
+  ctx.fillStyle = '#dbe1ee';
+  for (let x = x0; x < x1; x += step){
+    for (let y = y0; y < y1; y += step) ctx.fillRect(x, y, r, r);
+  }
+}
+
+function drawShape(s, c){
+  c.save();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  if (s.type === 'stroke'){
+    c.globalAlpha = s.tool === 'highlighter' ? 0.35 : 1;
+    c.fillStyle = s.color;
+    c.strokeStyle = s.color;
+    c.lineWidth = s.width;
+    const pts = s.pts;
+    if (pts.length === 1){
+      c.beginPath();
+      c.arc(pts[0].x, pts[0].y, Math.max(s.width / 2, 0.6), 0, Math.PI * 2);
+      c.fill();
+    } else {
+      c.beginPath();
+      c.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y);
+      c.stroke();
+    }
+  } else if (s.type === 'line' || s.type === 'arrow'){
+    c.strokeStyle = s.color;
+    c.lineWidth = s.width;
+    c.beginPath();
+    c.moveTo(s.x0, s.y0);
+    c.lineTo(s.x1, s.y1);
+    c.stroke();
+    if (s.type === 'arrow'){
+      const ang = Math.atan2(s.y1 - s.y0, s.x1 - s.x0);
+      const L = Math.max(10, s.width * 3.4);
+      c.beginPath();
+      c.moveTo(s.x1, s.y1);
+      c.lineTo(s.x1 - L * Math.cos(ang - 0.42), s.y1 - L * Math.sin(ang - 0.42));
+      c.moveTo(s.x1, s.y1);
+      c.lineTo(s.x1 - L * Math.cos(ang + 0.42), s.y1 - L * Math.sin(ang + 0.42));
+      c.stroke();
+    }
+  } else if (s.type === 'rect' || s.type === 'ellipse'){
+    const x = Math.min(s.x0, s.x1), y = Math.min(s.y0, s.y1);
+    const w = Math.abs(s.x1 - s.x0), h = Math.abs(s.y1 - s.y0);
+    c.strokeStyle = s.color;
+    c.lineWidth = s.width;
+    c.beginPath();
+    if (s.type === 'rect'){
+      c.rect(x, y, w, h);
+    } else {
+      c.ellipse(x + w / 2, y + h / 2, Math.max(w / 2, 0.5), Math.max(h / 2, 0.5), 0, 0, Math.PI * 2);
+    }
+    c.stroke();
+  } else if (s.type === 'text'){
+    c.fillStyle = s.color;
+    c.font = s.size + 'px "Segoe UI", system-ui, "Microsoft YaHei", sans-serif';
+    c.textBaseline = 'top';
+    c.fillText(s.text, s.x, s.y);
+  }
+  c.restore();
+}
+
+function draw(){
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  applyView(ctx);
+  drawGrid();
+  for (let i = 0; i < shapes.length; i++) drawShape(shapes[i], ctx);
+  if (cur) drawShape(cur, ctx);
+  updateUndoButtons();
+}
+
+/* ---------- 撤销 / 重做（快照式） ---------- */
+function pushHistory(){
+  history = history.slice(0, hp + 1);
+  history.push(clone(shapes));
+  if (history.length > 60) history.shift();
+  hp = history.length - 1;
+  updateUndoButtons();
+}
+function undo(){
+  if (hp <= 0) return;
+  hp--;
+  shapes = clone(history[hp]);
+  draw();
+}
+function redo(){
+  if (hp >= history.length - 1) return;
+  hp++;
+  shapes = clone(history[hp]);
+  draw();
+}
+function updateUndoButtons(){
+  const u = $('btnUndo'), r = $('btnRedo');
+  if (!u || !r) return;
+  u.disabled = hp <= 0;
+  r.disabled = hp >= history.length - 1;
+}
+
+/* ---------- 指针交互 ---------- */
+function localPos(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:e.clientX - r.left, y:e.clientY - r.top };
+}
+
+canvas.addEventListener('pointerdown', function(e){
+  const p0 = localPos(e);
+  if (tool === 'pan' || e.button === 1 || spaceDown){
+    panning = { x:e.clientX, y:e.clientY };
+    canvas.classList.add('tool-pan');
+    canvas.setPointerCapture(e.pointerId);
+    return;
+  }
+  canvas.setPointerCapture(e.pointerId);
+  const p = toWorld(p0.x, p0.y);
+  if (tool === 'eraser'){ erasing = true; eraseAt(p); return; }
+  if (tool === 'text'){ openText(p0); return; }
+  if (tool === 'pen' || tool === 'highlighter'){
+    cur = {
+      type:'stroke', tool:tool,
+      width: tool === 'highlighter' ? paint.width * 4 + 6 : paint.width,
+      color: tool === 'highlighter' ? HL_COLOR : paint.color,
+      pts:[p]
+    };
+  } else {
+    cur = { type:tool, color:paint.color, width:paint.width, x0:p.x, y0:p.y, x1:p.x, y1:p.y };
+  }
+  draw();
+});
+
+canvas.addEventListener('pointermove', function(e){
+  if (panning){
+    view.x += e.clientX - panning.x;
+    view.y += e.clientY - panning.y;
+    panning = { x:e.clientX, y:e.clientY };
+    draw();
+    return;
+  }
+  const lp = localPos(e);
+  const p = toWorld(lp.x, lp.y);
+  if (erasing){ eraseAt(p); return; }
+  if (!cur) return;
+  if (cur.type === 'stroke'){
+    const last = cur.pts[cur.pts.length - 1];
+    if (Math.abs(last.x - p.x) + Math.abs(last.y - p.y) < 1.2 / view.s) return;
+    cur.pts.push(p);
+  } else {
+    cur.x1 = p.x;
+    cur.y1 = p.y;
+  }
+  draw();
+});
+
+function endStroke(){
+  panning = null;
+  erasing = false;
+  canvas.classList.remove('tool-pan');
+  if (erased){ erased = false; pushHistory(); }
+  if (!cur) return;
+  const c = cur;
+  cur = null;
+  let keep = true;
+  if (c.type === 'stroke') keep = c.pts.length > 0;
+  else if (c.type === 'line' || c.type === 'arrow') keep = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) > 3;
+  else keep = Math.abs(c.x1 - c.x0) > 3 || Math.abs(c.y1 - c.y0) > 3;
+  if (keep){ shapes.push(c); pushHistory(); }
+  draw();
+}
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', endStroke);
+
+/* ---------- 橡皮：命中即删除整条 ---------- */
+function dist2(p, a, b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = dx * dx + dy * dy;
+  let t = len ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / len : 0;
+  t = Math.max(0, Math.min(1, t));
+  const x = a.x + t * dx, y = a.y + t * dy;
+  return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+}
+
+function hitShape(s, p, tol){
+  if (s.type === 'stroke'){
+    const t = tol + s.width / 2;
+    if (s.pts.length === 1) return dist2(p, s.pts[0], s.pts[0]) < t * t;
+    for (let i = 1; i < s.pts.length; i++){
+      if (dist2(p, s.pts[i - 1], s.pts[i]) < t * t) return true;
+    }
+    return false;
+  }
+  if (s.type === 'text'){
+    const w = s.text.length * s.size * 0.62, h = s.size * 1.3;
+    return p.x > s.x - 6 && p.x < s.x + w + 6 && p.y > s.y - 6 && p.y < s.y + h;
+  }
+  const t = tol + s.width;
+  if (s.type === 'line' || s.type === 'arrow'){
+    return dist2(p, { x:s.x0, y:s.y0 }, { x:s.x1, y:s.y1 }) < t * t;
+  }
+  if (s.type === 'rect'){
+    const x0 = Math.min(s.x0, s.x1), x1 = Math.max(s.x0, s.x1);
+    const y0 = Math.min(s.y0, s.y1), y1 = Math.max(s.y0, s.y1);
+    if (p.x < x0 - t || p.x > x1 + t || p.y < y0 - t || p.y > y1 + t) return false;
+    const insideX = p.x > x0 + t && p.x < x1 - t;
+    const insideY = p.y > y0 + t && p.y < y1 - t;
+    return !(insideX && insideY);
+  }
+  if (s.type === 'ellipse'){
+    const cx = (s.x0 + s.x1) / 2, cy = (s.y0 + s.y1) / 2;
+    const rx = Math.max(Math.abs(s.x1 - s.x0) / 2, 0.5) + t;
+    const ry = Math.max(Math.abs(s.y1 - s.y0) / 2, 0.5) + t;
+    const v = Math.pow((p.x - cx) / rx, 2) + Math.pow((p.y - cy) / ry, 2);
+    return v > 0.72 && v < 1.4;
+  }
+  return false;
+}
+
+function eraseAt(p){
+  const tol = 9 / view.s;
+  let hit = false;
+  for (let i = shapes.length - 1; i >= 0; i--){
+    if (hitShape(shapes[i], p, tol)){
+      shapes.splice(i, 1);
+      hit = true;
+    }
+  }
+  if (hit){ erased = true; draw(); }
+}
+
+/* ---------- 文字工具 ---------- */
+let textAt = null;
+function openText(p0){
+  textAt = toWorld(p0.x, p0.y);
+  const inp = $('textInput');
+  inp.style.display = 'block';
+  inp.style.left = p0.x + 'px';
+  inp.style.top = (p0.y - 13) + 'px';
+  inp.value = '';
+  inp.focus();
+}
+function commitText(){
+  const inp = $('textInput');
+  if (inp.style.display === 'none') return;
+  const v = inp.value.trim();
+  inp.style.display = 'none';
+  if (!v || !textAt) return;
+  shapes.push({ type:'text', x:textAt.x, y:textAt.y, text:v, color:paint.color, size:20 });
+  textAt = null;
+  pushHistory();
+  draw();
+}
+
+/* ---------- 工具切换 / 缩放 ---------- */
+function setTool(t){
+  tool = t;
+  document.querySelectorAll('#toolbar .tbtn[data-tool]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tool === t);
+  });
+  canvas.classList.toggle('tool-pan', t === 'pan');
+  canvas.classList.toggle('tool-text', t === 'text');
+}
+
+function setZoom(ns, cx, cy){
+  ns = Math.max(0.25, Math.min(4, ns));
+  if (cx === undefined){ cx = W / 2; cy = H / 2; }
+  const k = ns / view.s;
+  view.x = cx - (cx - view.x) * k;
+  view.y = cy - (cy - view.y) * k;
+  view.s = ns;
+  $('zoomLabel').textContent = Math.round(ns * 100) + '%';
+  draw();
+}
+</script><script>
+/* ==================== 远端协作模拟（仅演示） ==================== */
+const RC = { names:['林欣', '陈航', 'Zoe'], colors:['#f97316', '#22c55e', '#a855f7'] };
+const remote = { x:0, y:0 };
+
+function moveRemoteCursor(){
+  const w = W || 900, h = H || 600;
+  remote.x = 90 + Math.random() * Math.max(80, w - 300);
+  remote.y = 90 + Math.random() * Math.max(80, h - 260);
+  $('remoteCursor').style.transform = 'translate3d(' + remote.x.toFixed(1) + 'px,' + remote.y.toFixed(1) + 'px,0)';
+}
+
+function remoteStroke(){
+  const k = Math.floor(Math.random() * RC.names.length);
+  const color = RC.colors[k];
+  const tag = $('remoteTag');
+  tag.textContent = RC.names[k];
+  tag.style.background = color;
+  $('remoteCursor').style.color = color;
+  moveRemoteCursor();
+
+  const sx = 140 + Math.random() * Math.max(80, W - 400);
+  const sy = 140 + Math.random() * Math.max(80, H - 340);
+  const len = 130 + Math.random() * 210;
+  const ang = Math.random() * Math.PI * 2;
+  const bend = (Math.random() - 0.5) * 1.5;
+  const n = 26, pts = [];
+  for (let i = 0; i <= n; i++){
+    const t = i / n;
+    const a = ang + bend * t;
+    const wp = toWorld(sx + Math.cos(a) * len * t, sy + Math.sin(a) * len * t);
+    pts.push({ x:wp.x + Math.sin(t * 9) * 6, y:wp.y + Math.cos(t * 11) * 5 });
+  }
+  const s = { type:'stroke', tool:'pen', color:color, width:3, pts:[] };
+  shapes.push(s);
+  let i = 0;
+  const timer = setInterval(function(){
+    for (let j = 0; j < 2 && i < pts.length; j++) s.pts.push(pts[i++]);
+    draw();
+    if (i >= pts.length) clearInterval(timer);
+  }, 40);
+}
+
+/* ==================== 局域网快传（模拟） ==================== */
+function fakeTransfer(file){
+  const mb = (file.size / 1048576).toFixed(1);
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = icon('file', 15)
+    + '<span>' + file.name + ' · ' + mb + ' MB</span>'
+    + '<span class="progress"><i></i></span>'
+    + '<span class="pct">0%</span>';
+  $('toasts').appendChild(el);
+  const bar = el.querySelector('.progress i');
+  const pct = el.querySelector('.pct');
+  let p = 0;
+  const timer = setInterval(function(){
+    p = Math.min(100, p + 5 + Math.random() * 10);
+    bar.style.width = p + '%';
+    pct.textContent = Math.round(p) + '%';
+    if (p >= 100){
+      clearInterval(timer);
+      setTimeout(function(){
+        el.style.transition = 'opacity .3s';
+        el.style.opacity = '0';
+        setTimeout(function(){ el.remove(); }, 320);
+        toast('快传完成：' + file.name + ' · ' + mb + ' MB · 走局域网直连通道', 3200, 'wave');
+      }, 240);
+    }
+  }, 90);
+}
+
+/* ==================== 导出 PNG ==================== */
+function exportPNG(){
+  const off = document.createElement('canvas');
+  off.width = Math.round(W * DPR);
+  off.height = Math.round(H * DPR);
+  const c = off.getContext('2d');
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, off.width, off.height);
+  c.setTransform(DPR * view.s, 0, 0, DPR * view.s, DPR * view.x, DPR * view.y);
+  for (let i = 0; i < shapes.length; i++) drawShape(shapes[i], c);
+  const a = document.createElement('a');
+  a.download = 'whiteboard-' + Date.now() + '.png';
+  a.href = off.toDataURL('image/png');
+  a.click();
+  toast('已导出当前白板视图为 PNG');
+}
+
+/* ==================== 事件绑定 ==================== */
+function syncSwatch(){
+  document.querySelectorAll('#toolbar .swatch').forEach(function(el){
+    el.classList.toggle('active', el.dataset.color === paint.color);
+  });
+}
+
+function bindEvents(){
+  const wrap = $('boardWrap');
+
+  $('btnCollapse').addEventListener('click', function(){
+    $('app').classList.toggle('collapsed');
+    setTimeout(function(){ resize(); layoutChat(); }, 240);
+  });
+
+  $('btnMic').addEventListener('click', function(){
+    const me = PEERS[0];
+    me.muted = !me.muted;
+    this.classList.toggle('off', me.muted);
+    this.innerHTML = me.muted
+      ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS.micOff + '</svg>'
+      : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS.mic + '</svg>';
+    renderVoice();
+    toast(me.muted ? '麦克风已静音' : '麦克风已开启', 1600, 'mic');
+  });
+
+  $('btnCam').addEventListener('click', function(){
+    this.classList.toggle('off');
+    toast(this.classList.contains('off') ? '摄像头已关闭（本期为可选开关）' : '摄像头已开启（需用户授权）', 2000, 'cam');
+  });
+
+  $('btnHang').addEventListener('click', function(){
+    CHAT.push({ sys:true, text:'你已离开房间（演示）' });
+    renderChat();
+    toast('演示模式：未真正断开连接', 2000);
+  });
+
+  $('btnShare').addEventListener('click', function(){ toast('演示模式：屏幕共享需 getDisplayMedia 授权', 2200, 'wave'); });
+  $('btnInvite').addEventListener('click', function(){ toast('演示模式：邀请链接已复制（http://<节点IP>:8443/?room=demo）', 2600, 'wave'); });
+  $('btnPresent').addEventListener('click', function(){ toast('演示模式：镜头与白板已就绪', 1800, 'wave'); });
+
+  $('toolbar').addEventListener('click', function(e){
+    const tbtn = e.target.closest('.tbtn');
+    if (tbtn && tbtn.dataset.tool){ setTool(tbtn.dataset.tool); return; }
+    const sw = e.target.closest('.swatch');
+    if (sw){ paint.color = sw.dataset.color; syncSwatch(); return; }
+    if (e.target.closest('#btnUndo')) return undo();
+    if (e.target.closest('#btnRedo')) return redo();
+    if (e.target.closest('#btnClear')){
+      shapes = [];
+      pushHistory();
+      draw();
+      toast('白板已清空（可用撤销恢复）', 1800, 'trash');
+      return;
+    }
+    if (e.target.closest('#btnExport')) return exportPNG();
+  });
+
+  $('toolbar').addEventListener('input', function(e){
+    if (e.target.id === 'widthRange'){
+      paint.width = Number(e.target.value);
+    }
+  });
+
+  $('btnZoomIn').addEventListener('click', function(){ setZoom(view.s * 1.2); });
+  $('btnZoomOut').addEventListener('click', function(){ setZoom(view.s / 1.2); });
+  $('btnZoomFit').addEventListener('click', function(){
+    view.x = 0; view.y = 0; view.s = 1;
+    $('zoomLabel').textContent = '100%';
+    draw();
+  });
+
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    const lp = localPos(e);
+    setZoom(view.s * Math.exp(-e.deltaY * 0.0015), lp.x, lp.y);
+  }, { passive:false });
+
+  $('btnChatSend').addEventListener('click', chatSend);
+  $('chatInput').addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); chatSend(); }
+  });
+  $('btnChatMin').addEventListener('click', function(){
+    const c = $('chat');
+    c.classList.toggle('min');
+    if (!c.classList.contains('min')){ unread = 0; $('chatBadge').style.display = 'none'; }
+  });
+
+  ['dragenter', 'dragover'].forEach(function(ev){
+    wrap.addEventListener(ev, function(e){
+      e.preventDefault();
+      wrap.querySelector('.drop-hint').classList.add('show');
+    });
+  });
+  wrap.addEventListener('dragleave', function(e){
+    if (e.relatedTarget && wrap.contains(e.relatedTarget)) return;
+    wrap.querySelector('.drop-hint').classList.remove('show');
+  });
+  wrap.addEventListener('drop', function(e){
+    e.preventDefault();
+    wrap.querySelector('.drop-hint').classList.remove('show');
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) fakeTransfer(f);
+  });
+
+  $('textInput').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') commitText();
+    if (e.key === 'Escape'){ this.style.display = 'none'; textAt = null; }
+  });
+  $('textInput').addEventListener('blur', commitText);
+
+  window.addEventListener('keydown', function(e){
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    const k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k === 'z'){ e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'y'){ e.preventDefault(); redo(); return; }
+    if (e.code === 'Space'){ spaceDown = true; canvas.classList.add('tool-pan'); }
+    const map = { p:'pen', v:'pen', h:'highlighter', e:'eraser', l:'line', a:'arrow', r:'rect', o:'ellipse', t:'text' };
+    if (map[k] && !e.ctrlKey && !e.metaKey) setTool(map[k]);
+    if (e.key === 'Escape' && tool === 'pan') setTool('pen');
+  });
+  window.addEventListener('keyup', function(e){
+    if (e.code === 'Space'){
+      spaceDown = false;
+      if (tool !== 'pan') canvas.classList.remove('tool-pan');
+    }
+  });
+
+  window.addEventListener('resize', function(){ resize(); layoutChat(); });
+}
+
+function layoutChat(){
+  const tb = document.querySelector('.toolbar');
+  const chat = $('chat');
+  if (!tb || !chat) return;
+  const t = tb.getBoundingClientRect();
+  const b = $('boardWrap').getBoundingClientRect();
+  chat.style.bottom = Math.round(b.bottom - t.top + 12) + 'px';
+}
+
+/* ==================== 初始化 ==================== */function init(){
+  renderVoice();
+  renderChat();
+  renderToolbar();
+  setTool('pen');
+  syncSwatch();
+  layoutChat();
+  resize();
+  $('zoomLabel').textContent = '100%';
+  bindEvents();
+
+  moveRemoteCursor();
+  setInterval(voiceTicker, 1900);
+  setInterval(moveRemoteCursor, 3800);
+  setInterval(function(){ if (Math.random() > 0.42) remoteStroke(); }, 7000);
+  setInterval(function(){ $('rtt').textContent = 9 + Math.round(Math.random() * 9); }, 2600);
+  setTimeout(function(){ $('hint').classList.add('hide'); }, 9000);
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

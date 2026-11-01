@@ -1,0 +1,143 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- 适用范围：本模板仅用于尾页(ending)；不得套用于内容页/封面/目录/章节等其他页面。配色/字体以 style.md 为唯一权威。
+       占位符：ENDING_TITLE 主标题 / ENDING_MESSAGE 致谢语 / COVER_PRESENTER 署名 / COVER_DATE 日期 / PAGE_FOOTER 来源/口径注释。
+       背景图（可选）：本模板默认白底 #fff。如需插入背景图，按 designer.md 方式在 .ppt-slide 内首位插入：
+         <img class="absolute inset-0 w-full h-full object-cover" src="背景图路径" alt="" />
+         <div class="absolute inset-0 bg-white/80"></div>   ← 白色高透明遮罩（科技极简保持纯净浅色；禁深色/渐变遮罩）
+       并把下方 .ending-stage 的 class 补上 "relative z-10"。严禁 background-image:url() 与 .template-bg-image。 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>PPT Slide</title>
+
+  <!-- Tailwind CSS（必选） -->
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/tailwind.js"></script>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/echarts.min.js"></script>
+
+  <!-- 字体引用 -->
+  <link href="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/css/fonts.css" rel="stylesheet" />
+
+  <!-- Tailwind 配置：科技极简风格配色（以 style.md 为唯一权威） -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nearBlack: "#1d1d1f",
+            techBlue: "#0071e3",
+            linkBlue: "#0066cc",
+            lightGray: "#f5f5f7",
+            microWhite: "#fafafc",
+            black80: "rgba(0, 0, 0, 0.8)",
+            black48: "rgba(0, 0, 0, 0.48)",
+          },
+          fontFamily: { sans: ["NanxiXinyuanti","Noto Sans SC","sans-serif"] },
+        },
+      },
+    };
+  </script>
+
+  <!-- 防溢出硬性约束 → 全局 CSS 约束（逐字包含） -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 幻灯片容器 */
+      .ppt-slide {
+        @apply relative w-[1280px] h-[720px] mx-auto box-border overflow-hidden;
+      }
+
+      /* 全局防溢出约束 - 应用到所有子元素 */
+      .ppt-slide *,
+      .ppt-slide *::before,
+      .ppt-slide *::after {
+        @apply box-border;
+        max-width: 100%;
+      }
+
+      /* 图片/视频/图表防溢出 */
+      .ppt-slide img {
+        @apply max-w-full max-h-full;
+      }
+
+      .ppt-slide video,
+      .ppt-slide svg,
+      .ppt-slide .echarts-main,
+      .ppt-slide .chart-container,
+      .ppt-slide [id*="chart" i] {
+        @apply max-w-full max-h-full object-contain;
+      }
+
+      /* 图表容器高度防御 */
+      .ppt-slide [id*="chart" i],
+      .ppt-slide .chart-container,
+      .ppt-slide .echarts-main {
+        width: 100%;
+        height: 100%;
+        min-height: 160px;
+      }
+
+      /* 图表包装器高度防御 */
+      .ppt-slide :has(> [id*="chart" i]),
+      .ppt-slide :has(> .chart-container),
+      .ppt-slide :has(> .echarts-main) {
+        min-height: 160px;
+      }
+
+      /* 内容安全区：核心内容容器（边距由此统一提供） */
+      .content-safe {
+        @apply w-[1220px] h-[660px] my-[30px] mx-auto flex flex-col overflow-hidden;
+      }
+
+      /* 禁止模糊滤镜效果 */
+      .ppt-slide [class*="blur"],
+      .ppt-slide [style*="blur"] {
+        filter: none !important;
+        backdrop-filter: none !important;
+      }
+
+      /* 禁止半透明渐变背景，使用纯色替代 */
+      .ppt-slide [class*="gradient"] {
+        background-image: none !important;
+      }
+
+      /* 禁止毛玻璃效果 */
+      .ppt-slide [class*="backdrop-blur"],
+      .ppt-slide [style*="backdrop-filter"] {
+        backdrop-filter: none !important;
+      }
+
+      /* 全局字体设置：科技极简风格 */
+      .ppt-slide {
+        font-family: "NanxiXinyuanti", "Noto Sans SC", sans-serif !important;
+      }
+    }
+  </style>
+
+  <!-- 全局文字颜色 -->
+  <style>
+    body {
+      color: #1d1d1f;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 背景图默认不启用；底色为纯白 bg-white（禁深色底） -->
+  <div class="ppt-slide flex flex-col bg-white relative" type="ending">
+    <!-- 内容层：极简居中 -->
+    <div class="ending-stage relative z-10 flex flex-col justify-center items-center text-center h-full px-[120px] py-[96px]">
+      <span class="text-[14px] text-black48 tracking-[0.18em] uppercase">Thank You</span>
+      <h1 class="text-[72px] font-semibold text-nearBlack leading-[1.35] mt-[22px]" style="font-family: 'NanxiXinyuanti', 'Noto Sans SC', sans-serif; letter-spacing: -0.02em">感谢聆听</h1>
+      <div class="w-[40px] h-[1px] bg-nearBlack mt-[30px]"></div>
+      <p class="text-[21px] text-black80 leading-[1.4] mt-[26px] max-w-[680px]">基于Web的协同白板与实时音视频及局域网快传系统开题报告汇报完毕，敬请各位老师批评指正</p>
+      <span class="inline-block mt-[40px] border border-linkBlue text-linkBlue text-[16px] px-[20px] py-[7px]" style="border-radius: 980px">返回首页 ›</span>
+    </div>
+
+    <!-- 底部口径注释（角落，无页码） -->
+    <p class="absolute left-[64px] bottom-[44px] text-[13px] text-black48 z-10">汇报人：毕业生 · 指导教师：指导教师 · </p>
+  </div>
+</body>
+
+</html>

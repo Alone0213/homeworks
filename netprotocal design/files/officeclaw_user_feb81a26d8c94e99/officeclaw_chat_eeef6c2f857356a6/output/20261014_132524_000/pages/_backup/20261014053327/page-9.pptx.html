@@ -1,0 +1,360 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- 适用范围：content-template.html 仅用于内容页(content)；结构页(cover/agenda/section/ending)请勿套用，各自有对应模板，按 style.md「模板使用规则」字面拷贝。配色/字体以 style.md 为唯一权威。 -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>PPT Slide</title>
+
+  <!-- Tailwind CSS（必选） -->
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/tailwind.js"></script>
+  <script src="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/vendors/echarts.min.js"></script>
+
+  <!-- 字体引用 -->
+  <link href="https://cdn.digitalhumanai.top/slidagent/pptx-craft/assets/css/fonts.css" rel="stylesheet" />
+
+  <!-- Tailwind 配置：科技极简风格配色（以 style.md 为唯一权威） -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nearBlack: "#1d1d1f",
+            techBlue: "#0071e3",
+            grayText: "rgba(0, 0, 0, 0.48)",
+          },
+          fontFamily: {
+            sans: ["NanxiXinyuanti", "Noto Sans SC", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- 防溢出硬性约束 → 全局 CSS 约束（逐字包含） -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 幻灯片容器 */
+      .ppt-slide {
+        @apply relative w-[1280px] h-[720px] mx-auto box-border overflow-hidden;
+      }
+
+      /* 全局防溢出约束 - 应用到所有子元素 */
+      .ppt-slide *,
+      .ppt-slide *::before,
+      .ppt-slide *::after {
+        @apply box-border;
+        max-width: 100%;
+      }
+
+      /* 图片/视频/图表防溢出 */
+      .ppt-slide img {
+        @apply max-w-full max-h-full;
+      }
+
+      .ppt-slide video,
+      .ppt-slide svg,
+      .ppt-slide .echarts-main,
+      .ppt-slide .chart-container,
+      .ppt-slide [id*="chart" i] {
+        @apply max-w-full max-h-full object-contain;
+      }
+
+      /* 图表容器高度防御 */
+      .ppt-slide [id*="chart" i],
+      .ppt-slide .chart-container,
+      .ppt-slide .echarts-main {
+        width: 100%;
+        height: 100%;
+        min-height: 160px;
+      }
+
+      /* 图表包装器高度防御 */
+      .ppt-slide :has(> [id*="chart" i]),
+      .ppt-slide :has(> .chart-container),
+      .ppt-slide :has(> .echarts-main) {
+        min-height: 160px;
+      }
+
+      /* 内容安全区：核心内容容器（边距由此统一提供） */
+      .content-safe {
+        @apply w-[1220px] h-[660px] my-[30px] mx-auto flex flex-col overflow-hidden;
+      }
+
+      /* 禁止模糊滤镜效果 */
+      .ppt-slide [class*="blur"],
+      .ppt-slide [style*="blur"] {
+        filter: none !important;
+        backdrop-filter: none !important;
+      }
+
+      /* 禁止半透明渐变背景，使用纯色替代 */
+      .ppt-slide [class*="gradient"] {
+        background-image: none !important;
+      }
+
+      /* 禁止毛玻璃效果 */
+      .ppt-slide [class*="backdrop-blur"],
+      .ppt-slide [style*="backdrop-filter"] {
+        backdrop-filter: none !important;
+      }
+
+      /* 全局字体设置：科技极简风格 */
+      .ppt-slide {
+        font-family: "NanxiXinyuanti", "Noto Sans SC", sans-serif !important;
+      }
+    }
+  </style>
+
+  <!-- 全局文字颜色 -->
+  <style>
+    body {
+      color: #1d1d1f;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ppt-slide flex flex-col bg-white" type="content">
+    <div class="content-safe">
+      <!-- 标题栏（跨页锚点片段：文字样式逐字复用，边距由 content-safe 统一提供） -->
+      <div class="pt-[40px] pb-[16px] flex-shrink-0">
+        <h1 class="text-[35px] font-semibold text-nearBlack leading-[1.07] tracking-[-0.28px]">
+          WebSocket+CRDT协同白板同步协议设计
+        </h1>
+        <div class="w-[40px] h-[1px] bg-nearBlack mt-[12px]"></div>
+      </div>
+
+      <!-- 主视觉区：弹性填充 -->
+      <main class="flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
+        
+        <div class="w-full flex-1 min-h-0 flex flex-col gap-[14px]">
+          <!-- 数据流与同步机制架构图 -->
+          <div data-block="process" class="flex-shrink-0 bg-[#f5f5f7] rounded-[8px] px-[20px] py-[14px]">
+            <div class="flex items-center justify-between mb-[10px]">
+              <span class="text-[15px] font-semibold text-nearBlack tracking-[-0.224px]">协同白板数据流与同步机制</span>
+              <span class="text-[12px] text-grayText">五阶段流水线</span>
+            </div>
+            <div class="flex items-center gap-[6px]">
+              <div class="flex-1 bg-white rounded-[6px] px-[10px] py-[8px] text-center">
+                <div class="text-[13px] font-semibold text-nearBlack mb-[2px]">① Canvas捕获</div>
+                <div class="text-[11px] text-grayText leading-[1.33]">前端监听绘图事件</div>
+              </div>
+              <div class="text-[14px] text-techBlue font-semibold flex-shrink-0">→</div>
+              <div class="flex-1 bg-white rounded-[6px] px-[10px] py-[8px] text-center">
+                <div class="text-[13px] font-semibold text-nearBlack mb-[2px]">② WebSocket广播</div>
+                <div class="text-[11px] text-grayText leading-[1.33]">服务端转发全参与者</div>
+              </div>
+              <div class="text-[14px] text-techBlue font-semibold flex-shrink-0">→</div>
+              <div class="flex-1 bg-white rounded-[6px] px-[10px] py-[8px] text-center">
+                <div class="text-[13px] font-semibold text-nearBlack mb-[2px]">③ CRDT合并</div>
+                <div class="text-[11px] text-grayText leading-[1.33]">无冲突复制合并</div>
+              </div>
+              <div class="text-[14px] text-techBlue font-semibold flex-shrink-0">→</div>
+              <div class="flex-1 bg-white rounded-[6px] px-[10px] py-[8px] text-center">
+                <div class="text-[13px] font-semibold text-nearBlack mb-[2px]">④ 增量广播</div>
+                <div class="text-[11px] text-grayText leading-[1.33]">只发变化部分</div>
+              </div>
+              <div class="text-[14px] text-techBlue font-semibold flex-shrink-0">→</div>
+              <div class="flex-1 bg-white rounded-[6px] px-[10px] py-[8px] text-center">
+                <div class="text-[13px] font-semibold text-nearBlack mb-[2px]">⑤ 远端渲染</div>
+                <div class="text-[11px] text-grayText leading-[1.33]">B端Canvas重绘</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中间行：技术维度对比表 + 关键指标卡 -->
+          <div class="flex-1 min-h-0 flex gap-[14px]">
+            <!-- 技术维度对比表 -->
+            <div data-block="comparison" class="flex-[3] min-h-0 bg-white rounded-[8px] flex flex-col overflow-hidden">
+              <div class="px-[16px] pt-[12px] pb-[8px] flex-shrink-0">
+                <span class="text-[15px] font-semibold text-nearBlack tracking-[-0.224px]">技术维度对比</span>
+              </div>
+              <table class="w-full text-[12px] leading-[1.33]">
+                <thead>
+                  <tr class="bg-[#f5f5f7]">
+                    <th class="text-left px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">技术环节</th>
+                    <th class="text-left px-[10px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">方案A</th>
+                    <th class="text-left px-[10px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">方案B</th>
+                    <th class="text-left px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">方案C</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-[#f5f5f7]">
+                    <td class="px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">通信协议</td>
+                    <td class="px-[10px] py-[6px] text-grayText">JSON消息</td>
+                    <td class="px-[10px] py-[6px] text-grayText">Protobuf</td>
+                    <td class="px-[16px] py-[6px] text-grayText">MessagePack</td>
+                  </tr>
+                  <tr class="border-t border-[#f5f5f7]">
+                    <td class="px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">事件类型</td>
+                    <td class="px-[10px] py-[6px] text-grayText">Draw绘制</td>
+                    <td class="px-[10px] py-[6px] text-grayText">Erase擦除</td>
+                    <td class="px-[16px] py-[6px] text-grayText">CursorMove</td>
+                  </tr>
+                  <tr class="border-t border-[#f5f5f7]">
+                    <td class="px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">并发控制</td>
+                    <td class="px-[10px] py-[6px] text-grayText">CRDT算法</td>
+                    <td class="px-[10px] py-[6px] text-grayText">状态最终一致</td>
+                    <td class="px-[16px] py-[6px] text-grayText">覆盖冲突避免</td>
+                  </tr>
+                  <tr class="border-t border-[#f5f5f7]">
+                    <td class="px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">带宽优化</td>
+                    <td class="px-[10px] py-[6px] text-grayText">节流防抖</td>
+                    <td class="px-[10px] py-[6px] text-grayText">增量广播</td>
+                    <td class="px-[16px] py-[6px] text-grayText">二进制压缩</td>
+                  </tr>
+                  <tr class="border-t border-[#f5f5f7]">
+                    <td class="px-[16px] py-[6px] font-semibold text-nearBlack tracking-[-0.12px]">性能目标</td>
+                    <td class="px-[10px] py-[6px] text-grayText">延迟&lt;200ms</td>
+                    <td class="px-[10px] py-[6px] text-grayText">20人并发</td>
+                    <td class="px-[16px] py-[6px] text-grayText">5/10/20人测试</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 关键指标卡 -->
+            <div data-block="metric" class="flex-[2] min-h-0 flex flex-col gap-[10px]">
+              <div class="bg-[#f5f5f7] rounded-[8px] px-[16px] py-[12px] flex-shrink-0">
+                <div class="text-[11px] text-grayText tracking-[-0.12px] mb-[4px]">操作同步延迟目标</div>
+                <div class="flex items-baseline gap-[4px]">
+                  <span class="text-[28px] font-semibold text-techBlue leading-[1.07]">&lt;200</span>
+                  <span class="text-[14px] text-grayText">ms</span>
+                </div>
+                <div class="text-[11px] text-grayText leading-[1.33] mt-[4px]">A端绘图到B端渲染时间差</div>
+              </div>
+              <div class="bg-[#f5f5f7] rounded-[8px] px-[16px] py-[12px] flex-shrink-0">
+                <div class="text-[11px] text-grayText tracking-[-0.12px] mb-[4px]">并发测试人数档位</div>
+                <div class="flex items-baseline gap-[4px]">
+                  <span class="text-[28px] font-semibold text-nearBlack leading-[1.07]">5/10/20</span>
+                  <span class="text-[14px] text-grayText">人</span>
+                </div>
+                <div class="text-[11px] text-grayText leading-[1.33] mt-[4px]">同时在线绘制测试</div>
+              </div>
+              <div class="bg-[#f5f5f7] rounded-[8px] px-[16px] py-[12px] flex-shrink-0">
+                <div class="text-[11px] text-grayText tracking-[-0.12px] mb-[4px]">实验环境规格</div>
+                <div class="flex items-baseline gap-[4px]">
+                  <span class="text-[22px] font-semibold text-nearBlack leading-[1.07]">2核4G</span>
+                  <span class="text-[14px] text-grayText">/ 5Mbps</span>
+                </div>
+                <div class="text-[11px] text-grayText leading-[1.33] mt-[4px]">公网轻量服务器</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部行：关键设计要点 + 案例验证 -->
+          <div class="flex-shrink-0 flex gap-[14px]">
+            <!-- 关键设计要点 -->
+            <div data-block="support" class="flex-1 bg-white rounded-[8px] px-[16px] py-[12px]">
+              <div class="text-[14px] font-semibold text-nearBlack tracking-[-0.224px] mb-[8px]">关键设计要点</div>
+              <ul class="space-y-[5px] text-[12px] text-grayText leading-[1.33] tracking-[-0.12px]">
+                <li class="flex gap-[6px]"><span class="text-techBlue flex-shrink-0">·</span><span>WebSocket定义Draw/Erase/CursorMove/Chat四类事件</span></li>
+                <li class="flex gap-[6px]"><span class="text-techBlue flex-shrink-0">·</span><span>CRDT确保公网延迟下20人并发状态最终一致</span></li>
+                <li class="flex gap-[6px]"><span class="text-techBlue flex-shrink-0">·</span><span>前端节流+增量广播+MessagePack压缩降带宽</span></li>
+              </ul>
+            </div>
+            <!-- 案例验证 -->
+            <div data-block="case" class="flex-1 bg-[#f5f5f7] rounded-[8px] px-[16px] py-[12px]">
+              <div class="text-[14px] font-semibold text-nearBlack tracking-[-0.224px] mb-[8px]">案例验证</div>
+              <ul class="space-y-[5px] text-[12px] text-grayText leading-[1.33] tracking-[-0.12px]">
+                <li class="flex gap-[6px]"><span class="text-techBlue flex-shrink-0">·</span><span>CRDT并发控制：多人同时绘制时公网延迟下白板状态最终一致，避免覆盖冲突</span></li>
+                <li class="flex gap-[6px]"><span class="text-techBlue flex-shrink-0">·</span><span>增量广播优化：后端只发变化部分，配合二进制协议压缩数据体积降带宽</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      
+      </main>
+
+      <!-- 页脚/注释区（跨页锚点片段：文字样式逐字复用） -->
+      <div class="pt-[8px] pb-[16px] flex-shrink-0">
+        <p class="text-[14px] text-grayText">
+          来源：《基于Web的协同白板与实时音视频及局域网快传系统》开题报告大纲（修订版）模块3.2/3.6/4.1/4.2 | 性能指标均为设计目标/预期值，开题阶段尚无实测数据
+        </p>
+      </div>
+    </div>
+  </div>
+    <!-- CHART_SCAFFOLD_BEGIN
+    <script data-pptx-chart-scaffold="v1">
+      /*
+       * 图表骨架（图表候选页激活；非图表页保持注释即可，对浏览器与 fix 零副作用）。
+       * 重要：说明文字必须写在本 script 内的 JS 块注释中，禁止写在 HTML 注释定界符与
+       * script 之间（否则激活后会成为页面可见裸文本）。
+       *
+       * 激活步骤：
+       *   1) 图表块先从 PAGE_CONTENT 的 Grid/Flex 区域获得确定高度；纵向 Flex 槽示例：
+       *        div.flex-1.min-h-0.flex.flex-col > div.flex-1.min-h-0 > div#chart-1.w-full.h-full
+       *      Grid 单元由行轨道分配高度；块内标题/说明用 flex-shrink-0，绘图包装器消费剩余高度。
+       *      h-full 的直接父容器必须有可解析高度；中间不能只靠内容撑高，min-height 兜底不能代替高度链。
+       *   2) 把下方 const option = null 的 null 替换为真实图表 option（series/data/xAxis/yAxis 等）。
+       *   3) 保存页面后运行 activate-template-chart，由命令成对移除外层注释；不得手工删除定界符。
+       *      完整命令见 references/designer/charts.md 或本页任务；填好数据不等于已激活。
+       *
+       * 骨架已内置硬约束（机制勿改）：SVG renderer · animation:false 强制 · 全局 textStyle.fontFamily · IIFE · formatter 外部函数。
+       * CHART_FONT_FAMILY 必须等于当前风格 style.md（custom 为 style-custom.md）frontmatter 的完整字体栈：
+       *   预设风格模板已预置正确值（勿改）；custom 模板为中性占位值，必须替换后再激活。
+       * 仍需 designer 自觉遵守（骨架不强制）：
+       *   - 禁止渐变（colorStops、type 为 linear 或 radial、echarts.graphic.LinearGradient 等会触发导出位图化）；
+       *     折线/面积图 areaStyle.color 用半透明纯色，如 rgba(<风格主色>, 0.18)，色值以 style.md 为准。
+       *   - 坐标轴/图例/数据标签的 fontFamily/color 按 style.md 图表色规范设置。
+       * 设计约束：外层 HTML 注释（BEGIN 与 END 之间）任何位置都不得出现 HTML 注释结束符
+       * 或连续减号，否则会提前终止外层注释、让非图表页误执行图表代码。
+       * 多图表：每段独立成 HTML 注释块（CHART_SCAFFOLD_BEGIN 与 CHART_SCAFFOLD_2_BEGIN ），并把第二段标签改为 _2_ 以便区分；切勿把第二段粘贴到第一段注释内部，否则外层注释会在内层第一个 HTML标签注释结束符（减号减号大于号）处提前闭合。改 id（chart-1 改 chart-2）与 getElementById 入参。
+       */
+      (function () {
+        const CHART_FONT_FAMILY = "NanxiXinyuanti, Noto Sans SC, sans-serif";
+        // formatter 外部函数模板：
+        //   axisLabel / xAxis / yAxis 的 formatter 接收原始数值；
+        //   series.label / tooltip 的 formatter 接收 params 对象（需取 .value）。
+        function formatAxisNumber(v) {
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatAxisPercent(v) {
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatAxisPercentAsIs(v) {
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        function formatLabelNumber(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          if (v >= 1e8) return (v / 1e8).toFixed(1) + "亿";
+          if (v >= 1e4) return (v / 1e4).toFixed(1) + "万";
+          return v.toString();
+        }
+        function formatLabelPercent(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return (v * 100).toFixed(1) + "%";
+        }
+        // data 已是百分数（如 72.2）时用这个；用错会放大 100 倍并压到柱子上
+        function formatLabelPercentAsIs(p) {
+          var v = typeof p === "object" ? p.value : p;
+          if (v == null) return "";
+          return Number(v).toFixed(1) + "%";
+        }
+        const el = document.getElementById("chart-1");
+        if (!el) return;
+        // 激活后把下方 null 替换为图表 option 对象，例如：
+        //   { xAxis:{type:"category",data:[...]}, yAxis:{type:"value"}, series:[{data:[...],type:"bar"}] }
+        // 注意：option 校验必须在 echarts.init 之前，否则未替换 null 时仍会创建实例并产出空 SVG，
+        // 进而被 convert 阶段渲染为空图（fix 已不再落盘 ECharts，由 convert 阶段现场渲染）。
+        const option = null;
+        if (!option) return; // 未填 option 则跳过，避免执行 echarts.init 产出空图
+        const chart = echarts.init(el, null, { renderer: "svg" });
+        option.animation = false; // 强制禁动画，PPT 静态输出必须禁用，不可覆盖
+        option.textStyle = Object.assign({ fontFamily: CHART_FONT_FAMILY }, option.textStyle);
+        chart.setOption(option);
+      })();
+    </script>
+    CHART_SCAFFOLD_END -->
+</body>
+
+</html>
